@@ -35,7 +35,9 @@
     <a href="/admin/" class="brand"><img src="/assets/logo-mark.png" alt="" width="70" height="34"><span>PRIME<b>SPHERE</b></span><em>Admin</em></a>
     <nav class="tabs" aria-label="Admin sections">
       <button type="button" class="tab" data-view="messages" aria-current="page">Messages <span class="badge" id="new-badge" hidden>0</span></button>
+      <button type="button" class="tab" data-view="bookings">Bookings <span class="badge" id="booking-badge" hidden>0</span></button>
       <button type="button" class="tab" data-view="chat">Live chat <span class="badge" id="chat-badge" hidden>0</span></button>
+      <button type="button" class="tab" data-view="content">Content</button>
       <button type="button" class="tab" data-view="stores">Stores</button>
     </nav>
     <div class="topbar-actions">
@@ -103,6 +105,59 @@
     </div>
   </section>
 
+  <!-- Bookings -->
+  <section class="view" id="view-bookings" hidden>
+    <div class="view-head">
+      <div>
+        <h1>Booked calls</h1>
+        <p class="muted">Calls booked from the contact page. Times are shown in your booking time zone.</p>
+      </div>
+      <a class="ghost-btn" id="bk-export" href="/api/admin/submissions?kind=booking&amp;format=csv">Export CSV</a>
+    </div>
+    <div class="toolbar">
+      <div class="segments" role="group" aria-label="Show bookings">
+        <button type="button" class="segment" data-bk-status="upcoming" aria-pressed="true">Upcoming <span class="seg-count" id="bk-upcoming-count"></span></button>
+        <button type="button" class="segment" data-bk-status="past" aria-pressed="false">Past</button>
+        <button type="button" class="segment" data-bk-status="cancelled" aria-pressed="false">Cancelled</button>
+        <button type="button" class="segment" data-bk-status="all" aria-pressed="false">All</button>
+      </div>
+      <label class="search"><span class="sr-only">Search bookings</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="search" id="bk-search" placeholder="Search name, email, company">
+      </label>
+    </div>
+    <div class="split split--bk">
+      <div class="msg-list" id="bk-list" aria-live="polite"></div>
+      <article class="msg-detail" id="bk-detail"></article>
+    </div>
+  </section>
+
+  <!-- Content -->
+  <section class="view" id="view-content" hidden>
+    <div class="view-head">
+      <div>
+        <h1>Website content</h1>
+        <p class="muted" id="content-help">Edit the sections on your homepage.</p>
+      </div>
+      <button type="button" class="btn" id="content-add">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        <span id="content-add-label">Add</span>
+      </button>
+    </div>
+    <div class="toolbar">
+      <div class="segments segments--scroll" role="group" aria-label="Section">
+        <button type="button" class="segment" data-ctype="project" aria-pressed="true">Projects</button>
+        <button type="button" class="segment" data-ctype="service" aria-pressed="false">Services</button>
+        <button type="button" class="segment" data-ctype="testimonial" aria-pressed="false">Testimonials</button>
+        <button type="button" class="segment" data-ctype="client" aria-pressed="false">Client logos</button>
+        <button type="button" class="segment" data-ctype="post" aria-pressed="false">Blog posts</button>
+        <button type="button" class="segment" data-ctype="booking" aria-pressed="false">Booking settings</button>
+      </div>
+    </div>
+    <div class="store-list" id="content-list" aria-live="polite"></div>
+    <form class="settings-form" id="booking-settings" hidden novalidate></form>
+  </section>
+
   <!-- Stores -->
   <section class="view" id="view-stores" hidden>
     <div class="view-head">
@@ -155,6 +210,25 @@
     <div class="drawer-foot">
       <button type="button" class="ghost-btn" data-close-editor>Cancel</button>
       <button type="submit" class="btn" id="save-store">Save store</button>
+    </div>
+  </form>
+</div>
+
+<!-- ============ Content editor ============ -->
+<div class="drawer" id="content-editor" hidden>
+  <div class="drawer-backdrop" data-close-content></div>
+  <form class="drawer-panel" id="content-form" novalidate role="dialog" aria-modal="true" aria-labelledby="content-editor-title">
+    <div class="drawer-head">
+      <h2 id="content-editor-title">Add item</h2>
+      <button type="button" class="icon-btn" data-close-content aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body" id="content-fields"></div>
+    <div class="drawer-foot">
+      <p class="form-msg" id="content-msg" role="alert" style="margin-right:auto"></p>
+      <button type="button" class="ghost-btn" data-close-content>Cancel</button>
+      <button type="submit" class="btn" id="content-save">Save</button>
     </div>
   </form>
 </div>

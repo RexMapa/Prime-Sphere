@@ -35,11 +35,11 @@
       <li><a href="#stores">Stores</a></li>
       <li><a href="#process">Process</a></li>
       <li><a href="#insights">Insights</a></li>
-      <li><a href="#contact">Contact</a></li>
+      <li><a href="contact.html">Contact</a></li>
     </ul>
     <div class="nav-actions">
-      <a href="#contact" class="btn btn--outline">Let's Talk</a>
-      <a href="#contact" class="btn btn--icon" aria-label="Start a project">
+      <a href="contact.html" class="btn btn--outline">Let's Talk</a>
+      <a href="contact.html" class="btn btn--icon" aria-label="Start a project">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg>
       </a>
       <button class="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links"><span></span><span></span><span></span></button>
@@ -146,7 +146,7 @@
       <svg class="spark" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" aria-hidden="true"><path d="M32 6v52M6 32h52M13 13l38 38M51 13L13 51"/></svg>
       <div class="ghost-word" aria-hidden="true">WORK</div>
     </div>
-    <div class="work-grid">
+    <div class="work-grid" data-content="project">
       <div class="work-col">
         <article class="project reveal">
           <div class="project-media"><div class="ph">Project image</div></div>
@@ -292,7 +292,7 @@
       <p class="reveal" style="--d:.16s">Design, build and grow under one roof. Each service plugs into the others, so your brand stays consistent everywhere it shows up.</p>
       <a href="#contact" class="text-link reveal" style="--d:.2s">More Services <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg></a>
     </div>
-    <div class="services">
+    <div class="services" data-content="service">
       <article class="service reveal">
         <svg class="service-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
         <h3>UI/UX Design</h3>
@@ -340,7 +340,7 @@
   <div class="wrap testi-grid">
     <div class="testi-main">
       <div class="ghost-word reveal" aria-hidden="true">TESTIMONIAL</div>
-      <div class="quotes" aria-live="polite">
+      <div class="quotes" aria-live="polite" data-content="testimonial">
         <!-- Replace with real client quotes -->
         <figure class="quote is-active">
           <blockquote>“Client quote goes here: a sentence or two about the results PrimeSphere delivered for their business.”</blockquote>
@@ -372,7 +372,7 @@
   <p class="reveal">Trusted by <span class="hl">brands around the world</span></p>
   <div class="marquee">
     <!-- Replace each slot with <img src="assets/client-name.svg" alt="Client name"> -->
-    <div class="marquee-track">
+    <div class="marquee-track" data-content="client">
       <div class="logo-slot">Client logo</div><div class="logo-slot">Client logo</div><div class="logo-slot">Client logo</div>
       <div class="logo-slot">Client logo</div><div class="logo-slot">Client logo</div><div class="logo-slot">Client logo</div>
       <div class="logo-slot" aria-hidden="true">Client logo</div><div class="logo-slot" aria-hidden="true">Client logo</div><div class="logo-slot" aria-hidden="true">Client logo</div>
@@ -390,8 +390,9 @@
         <h2 class="reveal" style="--d:.08s">Insights<br>Recent Posts</h2>
       </div>
       <p class="reveal" style="--d:.16s">Ideas, playbooks and lessons from the projects we work on.</p>
-      <a href="#" class="text-link reveal" style="--d:.2s">More Blogs <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg></a>
+      <a href="blog.html" class="text-link reveal" style="--d:.2s">More Blogs <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg></a>
     </div>
+    <div class="posts" data-content="post">
     <article class="post">
       <div class="post-media reveal-img"><div class="ph">Article image</div></div>
       <div class="post-body reveal">
@@ -410,6 +411,7 @@
       </div>
       <div class="post-media reveal-img"><div class="ph">Article image</div></div>
     </article>
+    </div>
   </div>
 </section>
 
@@ -430,7 +432,7 @@
     </div>
 
     <!-- Submissions are saved to your Neon database and shown in /admin. -->
-    <form class="form reveal" id="contact-form" novalidate data-endpoint="/api/contact" data-email="hello@yourdomain.com">
+    <form class="form reveal js-contact-form" id="contact-form" novalidate data-endpoint="/api/contact" data-email="hello@yourdomain.com">
       <h3>Feel Free to Contact Us</h3>
       <div class="hp" aria-hidden="true"><label>Leave this empty<input type="url" name="website" tabindex="-1" autocomplete="off"></label></div>
       <div class="form-row">
@@ -486,7 +488,7 @@
     </div>
     <ul class="footer-links">
       <li><a href="#top">Home</a></li><li><a href="#services">Services</a></li><li><a href="#work">Work</a></li>
-      <li><a href="#insights">Blog</a></li><li><a href="#contact">Contact</a></li>
+      <li><a href="blog.html">Blog</a></li><li><a href="#contact">Contact</a></li>
     </ul>
   </div>
 </footer>

@@ -4,19 +4,11 @@
 // PUT    { id, store fields } - update
 // PATCH  { order: [ids] }     - reorder
 // DELETE ?id=123              - delete (also removes uploaded screenshots)
-import { del } from '@vercel/blob';
 import { db, ensureSchema } from '../../lib/db.js';
 import { route, send, readJson, requireFetchHeader, HttpError } from '../../lib/http.js';
 import { requireAdmin } from '../../lib/auth.js';
 import { validateStore } from '../../lib/stores.js';
-
-const isBlob = (u) => /^https:\/\/[^/]+\.public\.blob\.vercel-storage\.com\//.test(u);
-
-async function removeBlobs(urls) {
-  const list = urls.filter(isBlob);
-  if (!list.length || !process.env.BLOB_READ_WRITE_TOKEN) return;
-  try { await del(list); } catch (e) { console.error('Blob cleanup failed', e); }
-}
+import { removeBlobs } from '../../lib/blob.js';
 
 function toJson(r) {
   return {

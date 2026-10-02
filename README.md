@@ -4,7 +4,8 @@ Static site (`index.html`, `stores.html`) with Vercel Functions in `/api`, a Neo
 and an admin dashboard at `/admin` for reading contact form messages and managing Shopify stores.
 
 ```
-index.html, stores.html, styles.css, script.js   public website
+index.html, stores.html, contact.html, blog.html  public pages
+styles.css, script.js, chat.js, booking.js, blog.js
 assets/                                          logos, placeholder screenshots
 admin/                                           admin dashboard (yoursite.com/admin)
 api/                                             serverless API routes
@@ -36,6 +37,21 @@ lib/                                             shared server code (database, l
   - Changes appear on the live site within about 30 seconds (the store list is cached briefly).
 
 The site comes with 9 placeholder stores the first time it connects to the database. Edit or delete them once your real stores are in.
+
+## Contact page and booked calls
+
+`contact.html` has two tabs: **Send a message** (goes to admin > Messages) and **Book a call** (goes to admin > Bookings).
+Visitors pick a date and time on a calendar. Times are shown in their own time zone, and a time that's already booked can't be booked again.
+Link straight to the booking tab with `contact.html#book`.
+
+In **admin > Bookings** you can confirm, cancel (the time opens up again), mark as completed, email the visitor or add the call to Google Calendar.
+Set your days, start times, call length, time zone and notice period in **admin > Content > Booking settings**.
+
+## Website content
+
+**admin > Content** controls these homepage sections: Projects, Services, Testimonials, Client logos and Blog posts.
+Add, edit, reorder, hide or delete items; upload images straight from the editor. A section with no visible items is hidden on the site.
+Blog posts get their own page at `blog.html?post=ID`, and the 2 newest also show on the homepage.
 
 ## Live chat
 

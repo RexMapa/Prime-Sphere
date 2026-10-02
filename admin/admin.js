@@ -70,7 +70,7 @@
     $('#login').hidden = true;
     $('#app').hidden = false;
     var h = location.hash.slice(1);
-    setView(['messages', 'chat', 'stores'].indexOf(h) > -1 ? h : 'messages');
+    setView(['messages', 'bookings', 'chat', 'content', 'stores'].indexOf(h) > -1 ? h : 'messages');
     startUnreadWatch();
   }
 
@@ -82,14 +82,14 @@
     if (!f.email.value.trim() || !f.password.value) { msg.textContent = 'Enter your email and password.'; return; }
     btn.disabled = true; btn.textContent = 'Signing in';
     msg.textContent = '';
-    api('/api/auth/login', { method: 'POST', json: { email: f.email.value, password: f.password.value }, allow401: true })
+    api('/api/auth?action=login', { method: 'POST', json: { email: f.email.value, password: f.password.value }, allow401: true })
       .then(function () { f.password.value = ''; showApp(); })
       .catch(function (err) { msg.textContent = err.message; f.password.select(); })
       .then(function () { btn.disabled = false; btn.textContent = 'Sign in'; });
   });
 
   $('#logout').addEventListener('click', function () {
-    api('/api/auth/logout', { method: 'POST' }).catch(function () {}).then(function () { showLogin('You are signed out.'); });
+    api('/api/auth?action=logout', { method: 'POST' }).catch(function () {}).then(function () { showLogin('You are signed out.'); });
   });
 
   /* ---------- Views ---------- */
@@ -99,13 +99,13 @@
     $$('.tab').forEach(function (t) {
       if (t.getAttribute('data-view') === name) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
     });
-    $('#view-messages').hidden = name !== 'messages';
-    $('#view-chat').hidden = name !== 'chat';
-    $('#view-stores').hidden = name !== 'stores';
+    ['messages', 'bookings', 'chat', 'content', 'stores'].forEach(function (v) { $('#view-' + v).hidden = name !== v; });
     history.replaceState(null, '', '#' + name);
     stopChatPolling();
     if (name === 'messages') loadMessages();
+    else if (name === 'bookings') loadBookings();
     else if (name === 'chat') startChatPolling();
+    else if (name === 'content') loadContent();
     else loadStores();
   }
   $$('.tab').forEach(function (t) { t.addEventListener('click', function () { setView(t.getAttribute('data-view')); }); });
@@ -127,7 +127,7 @@
   function loadMessages() {
     var list = $('#msg-list');
     if (!msgState.items.length) list.replaceChildren(el('p', { class: 'list-empty', text: 'Loading messages' }));
-    var qs = '?status=' + encodeURIComponent(msgState.status) + (msgState.q ? '&q=' + encodeURIComponent(msgState.q) : '');
+    var qs = '?kind=message&status=' + encodeURIComponent(msgState.status) + (msgState.q ? '&q=' + encodeURIComponent(msgState.q) : '');
     $('#export-csv').href = '/api/admin/submissions' + qs + '&format=csv';
     return api('/api/admin/submissions' + qs).then(function (data) {
       msgState.items = data.submissions;
@@ -136,6 +136,7 @@
       badge.hidden = !c.new; badge.textContent = c.new || 0;
       $('[data-count="new"]').textContent = c.new ? c.new : '';
       $('[data-count="archived"]').textContent = c.archived ? c.archived : '';
+      setBookingBadge(c.newBookings);
       renderMessages();
     }).catch(function (err) {
       if (err.status !== 401) list.replaceChildren(el('p', { class: 'list-empty', text: err.message }));
@@ -467,36 +468,37 @@
       return attempt(0);
     });
   }
-  function uploadInto(row, file, ui) {
-    row.dataset.uploading = '1';
-    ui.status.className = 'upload-status';
-    ui.status.textContent = 'Preparing image';
-    ui.bar.hidden = false;
-    var fill = $('span', ui.bar);
-    fill.style.width = '0%';
-    prepareImage(file).then(function (blob) {
+  // Shrinks (if needed) and uploads one image to Vercel Blob. Resolves with its URL.
+  function uploadFile(file, folder, onProgress) {
+    return prepareImage(file).then(function (blob) {
       return new Promise(function (resolve, reject) {
         var xhr = new XMLHttpRequest();
-        xhr.open('POST', '/api/admin/upload?filename=' + encodeURIComponent(file.name));
+        xhr.open('POST', '/api/admin/upload?folder=' + folder + '&filename=' + encodeURIComponent(file.name));
         xhr.setRequestHeader('Content-Type', blob.type);
         xhr.setRequestHeader('X-Requested-With', 'fetch');
-        xhr.upload.onprogress = function (e) {
-          if (e.lengthComputable) {
-            var pct = Math.round((e.loaded / e.total) * 100);
-            fill.style.width = pct + '%';
-            ui.status.textContent = 'Uploading ' + pct + '%';
-          }
-        };
+        xhr.upload.onprogress = function (e) { if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100)); };
         xhr.onload = function () {
           var data = {};
           try { data = JSON.parse(xhr.responseText); } catch (e) {}
-          if (xhr.status === 401) { showLogin('Your session ended. Sign in again.'); }
+          if (xhr.status === 401) showLogin('Your session ended. Sign in again.');
           if (xhr.status >= 200 && xhr.status < 300 && data.url) resolve(data.url);
           else reject(new Error(data.error || 'Upload failed (' + xhr.status + ').'));
         };
         xhr.onerror = function () { reject(new Error('Upload failed. Check your connection.')); };
         xhr.send(blob);
       });
+    });
+  }
+  function uploadInto(row, file, ui, folder) {
+    row.dataset.uploading = '1';
+    ui.status.className = 'upload-status';
+    ui.status.textContent = 'Preparing image';
+    ui.bar.hidden = false;
+    var fill = $('span', ui.bar);
+    fill.style.width = '0%';
+    uploadFile(file, folder || 'stores', function (pct) {
+      fill.style.width = pct + '%';
+      ui.status.textContent = 'Uploading ' + pct + '%';
     }).then(function (url) {
       ui.urlInput.value = url;
       setThumb(row, url);
@@ -541,6 +543,433 @@
       .then(function () { btn.disabled = false; btn.textContent = 'Save store'; });
   });
 
+
+  /* =========================================================
+     Bookings
+     ========================================================= */
+  var bk = { status: 'upcoming', q: '', items: [], selected: null };
+
+  function setBookingBadge(n) {
+    var b = $('#booking-badge');
+    if (n == null) return;
+    b.hidden = !n; b.textContent = n;
+  }
+  function bkDate(m, opts) {
+    return new Date(m.startsAt).toLocaleString(undefined, Object.assign({ timeZone: m.timezone || undefined }, opts));
+  }
+  function bkStatusLabel(s) { return { new: 'New', confirmed: 'Confirmed', completed: 'Completed', cancelled: 'Cancelled' }[s] || s; }
+
+  function loadBookings() {
+    var list = $('#bk-list');
+    if (!bk.items.length) list.replaceChildren(el('p', { class: 'list-empty', text: 'Loading bookings' }));
+    var qs = '?kind=booking&status=' + bk.status + (bk.q ? '&q=' + encodeURIComponent(bk.q) : '');
+    $('#bk-export').href = '/api/admin/submissions' + qs + '&format=csv';
+    return api('/api/admin/submissions' + qs).then(function (d) {
+      bk.items = d.submissions;
+      setBookingBadge(d.counts.newBookings);
+      $('#bk-upcoming-count').textContent = d.counts.upcoming || '';
+      renderBookings();
+    }).catch(function (err) { if (err.status !== 401) list.replaceChildren(el('p', { class: 'list-empty', text: err.message })); });
+  }
+
+  function renderBookings() {
+    var list = $('#bk-list');
+    if (!bk.items.length) {
+      list.replaceChildren(el('p', { class: 'list-empty', text: bk.q ? 'No bookings match "' + bk.q + '".' : bk.status === 'upcoming' ? 'No upcoming calls. New bookings from the contact page appear here.' : 'Nothing here yet.' }));
+    } else {
+      var nodes = [], lastDay = '';
+      bk.items.forEach(function (m) {
+        var day = bkDate(m, { weekday: 'long', day: 'numeric', month: 'long' });
+        if (day !== lastDay) { nodes.push(el('div', { class: 'bk-day-head', text: day })); lastDay = day; }
+        nodes.push(el('button', {
+          type: 'button', class: 'msg-item', 'data-status': m.status === 'new' ? 'new' : 'read', 'aria-current': String(bk.selected === m.id),
+          onclick: function () { bk.selected = m.id; renderBookings(); if (m.status === 'new') { /* stays new until you confirm */ } if (window.matchMedia('(max-width: 900px)').matches) window.scrollTo({ top: 0 }); }
+        }, [
+          el('span', { class: 'dot' + (m.status === 'new' ? '' : ' dot--off') }),
+          el('span', { class: 'msg-name', text: m.firstName + ' ' + m.lastName + (m.company ? ', ' + m.company : '') }),
+          el('span', { class: 'msg-date', text: bkDate(m, { hour: 'numeric', minute: '2-digit' }) }),
+          el('span', { class: 'msg-sub', text: bkStatusLabel(m.status) + ' · ' + m.discuss.join(', ') })
+        ]));
+      });
+      list.replaceChildren.apply(list, nodes);
+    }
+    renderBookingDetail(bk.items.find(function (m) { return m.id === bk.selected; }) || null);
+  }
+
+  function gcal(m) {
+    var f = function (d) { return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''); };
+    var s = new Date(m.startsAt), e = new Date(s.getTime() + (m.duration || 30) * 60000);
+    var details = ['Booked from the PrimeSphere website.', 'Email: ' + m.email, 'Phone: ' + m.phone, m.company ? 'Company: ' + m.company : '', 'Topics: ' + m.discuss.join(', '), m.helpWith ? 'Notes: ' + m.helpWith : ''].filter(Boolean).join('\n');
+    return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent('Call: ' + m.firstName + ' ' + m.lastName) +
+      '&dates=' + f(s) + '/' + f(e) + '&details=' + encodeURIComponent(details) + '&add=' + encodeURIComponent(m.email);
+  }
+
+  function renderBookingDetail(m) {
+    var box = $('#bk-detail');
+    $('.split--bk').classList.toggle('has-detail', !!m);
+    if (!m) {
+      box.replaceChildren(el('div', { class: 'empty-detail' }, [el('p', { text: bk.items.length ? 'Select a booking to see the details.' : 'Nothing to show here.' })]));
+      return;
+    }
+    var start = new Date(m.startsAt);
+    var visitorTime = m.visitorTz && m.visitorTz !== m.timezone
+      ? 'Their time: ' + start.toLocaleString(undefined, { timeZone: m.visitorTz, weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' (' + m.visitorTz.replace(/_/g, ' ') + ')'
+      : '';
+    var cell = function (label, value, wide) { return el('div', { class: 'detail-cell' + (wide ? ' detail-cell--wide' : '') }, [el('dt', { text: label }), el('dd', {}, [value])]); };
+    var txt = function (v) { return document.createTextNode(v || '-'); };
+    var act = function (label, status, cls) { return el('button', { type: 'button', class: cls || 'ghost-btn', text: label, onclick: function () { setBookingStatus(m, status); } }); };
+    var actions = [el('a', { class: 'btn', href: 'mailto:' + m.email + '?subject=' + encodeURIComponent('Your call with PrimeSphere on ' + bkDate(m, { weekday: 'long', day: 'numeric', month: 'long' })), text: 'Email' })];
+    if (m.status === 'new') actions.push(act('Confirm', 'confirmed'));
+    if (m.status !== 'cancelled' && m.status !== 'completed') actions.push(el('a', { class: 'ghost-btn', href: gcal(m), target: '_blank', rel: 'noopener', text: 'Add to Google Calendar' }));
+    if (m.status !== 'completed' && m.status !== 'cancelled' && start < new Date()) actions.push(act('Mark completed', 'completed'));
+    if (m.status !== 'cancelled') actions.push(act('Cancel call', 'cancelled', 'ghost-btn ghost-btn--danger'));
+    else actions.push(act('Restore', 'confirmed'));
+    actions.push(el('button', { type: 'button', class: 'ghost-btn ghost-btn--danger', text: 'Delete', onclick: function () { deleteBooking(m); } }));
+
+    box.replaceChildren(
+      el('div', { class: 'detail-head' }, [
+        el('button', { type: 'button', class: 'ghost-btn back-btn', onclick: function () { bk.selected = null; renderBookings(); } }, [el('span', { html: ICON.back }), 'All bookings']),
+        el('div', { class: 'detail-top' }, [
+          el('div', {}, [el('h2', { text: m.firstName + ' ' + m.lastName }), el('p', { class: 'muted', text: 'Booked ' + fmtDate(m.createdAt, true) })]),
+          el('span', { class: 'status-pill', 'data-s': m.status, text: bkStatusLabel(m.status) })
+        ]),
+        el('div', { class: 'bk-when' }, [
+          el('div', { class: 'bk-date-box' }, [el('span', { text: bkDate(m, { month: 'short' }) }), el('b', { text: bkDate(m, { day: 'numeric' }) })]),
+          el('div', {}, [
+            el('strong', { text: bkDate(m, { weekday: 'long', hour: 'numeric', minute: '2-digit' }) + ' (' + (m.duration || 30) + ' min)' }),
+            el('small', { text: [(m.timezone || '').replace(/_/g, ' '), visitorTime].filter(Boolean).join(' · ') })
+          ])
+        ]),
+        el('div', { class: 'detail-actions' }, actions)
+      ]),
+      el('dl', { class: 'detail-grid', style: 'margin:0' }, [
+        cell('Email', el('a', { href: 'mailto:' + m.email, text: m.email })),
+        cell('Phone', m.phone ? el('a', { href: 'tel:' + m.phone.replace(/[^\d+]/g, ''), text: m.phone }) : txt('')),
+        cell('Company', txt(m.company)),
+        cell('Topics', el('div', { class: 'chips' }, m.discuss.map(function (d) { return el('span', { class: 'chip', text: d }); }))),
+        cell('Notes', txt(m.helpWith), true)
+      ])
+    );
+  }
+
+  function setBookingStatus(m, status) {
+    if (status === 'cancelled' && !confirm('Cancel the call with ' + m.firstName + '? The time becomes available to book again. Let them know by email.')) return;
+    api('/api/admin/submissions', { method: 'PATCH', json: { ids: [m.id], status: status } }).then(function () {
+      toast({ confirmed: 'Call confirmed.', completed: 'Marked as completed.', cancelled: 'Call cancelled. The time is open again.' }[status] || 'Updated.');
+      loadBookings();
+    }).catch(function (err) { toast(err.message, true); });
+  }
+  function deleteBooking(m) {
+    if (!confirm('Delete the booking from ' + m.firstName + ' ' + m.lastName + '? This cannot be undone.')) return;
+    api('/api/admin/submissions?id=' + m.id, { method: 'DELETE' }).then(function () {
+      toast('Booking deleted.'); bk.selected = null; loadBookings();
+    }).catch(function (err) { toast(err.message, true); });
+  }
+  $$('[data-bk-status]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      $$('[data-bk-status]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      bk.status = b.getAttribute('data-bk-status'); bk.selected = null; loadBookings();
+    });
+  });
+  var bkTimer;
+  $('#bk-search').addEventListener('input', function (e) {
+    clearTimeout(bkTimer);
+    bkTimer = setTimeout(function () { bk.q = e.target.value.trim(); bk.selected = null; loadBookings(); }, 300);
+  });
+
+  /* =========================================================
+     Content (homepage sections) + booking settings
+     ========================================================= */
+  var ICON_OPTIONS = [
+    ['layout', 'Layout', '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>'],
+    ['code', 'Code', '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M9 10l-2 2 2 2M15 10l2 2-2 2"/>'],
+    ['globe', 'Globe', '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>'],
+    ['cart', 'Cart', '<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.5 12h11.5l2-8H6.2"/>'],
+    ['megaphone', 'Ads', '<path d="M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M16 8a5 5 0 0 1 0 8M19 5a9 9 0 0 1 0 14"/>'],
+    ['search', 'SEO', '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>'],
+    ['pen', 'Design', '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'],
+    ['chart', 'Growth', '<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>'],
+    ['phone', 'Mobile', '<rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/>'],
+    ['mail', 'Email', '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>']
+  ];
+  var TYPES = {
+    project: {
+      label: 'project', plural: 'Projects', help: 'Projects in the "See Our Recent Projects" section. The first 3 fit the homepage layout best.',
+      fields: [
+        { key: 'title', label: 'Project title*', type: 'text', max: 120, required: true, placeholder: 'e.g. Creative Logo Design' },
+        { key: 'tags', label: 'Categories', type: 'text', max: 120, placeholder: 'e.g. Branding, Identity' },
+        { key: 'image', label: 'Image', type: 'image', hint: 'Landscape works best, about 1200 x 800.' },
+        { key: 'url', label: 'Link (optional)', type: 'url', placeholder: 'https://' }
+      ],
+      title: function (d) { return d.title; }, sub: function (d) { return d.tags; }, image: function (d) { return d.image; }
+    },
+    service: {
+      label: 'service', plural: 'Services', help: 'Cards in the "Smart Development" section.',
+      fields: [
+        { key: 'title', label: 'Service name*', type: 'text', max: 80, required: true, placeholder: 'e.g. Shopify Development' },
+        { key: 'icon', label: 'Icon', type: 'icon' },
+        { key: 'items', label: 'What it includes', type: 'list', hint: 'One per line, up to 8.', placeholder: 'Theme builds\nStore migrations\nApp setup' },
+        { key: 'url', label: '"Explore More" link (optional)', type: 'url', placeholder: 'Leave empty to link to the contact page' }
+      ],
+      title: function (d) { return d.title; }, sub: function (d) { return (d.items || []).join(', '); }, icon: function (d) { return d.icon; }
+    },
+    testimonial: {
+      label: 'testimonial', plural: 'Testimonials', help: 'Quotes in the Clients Testimonials slider.',
+      fields: [
+        { key: 'quote', label: 'Quote*', type: 'textarea', max: 600, required: true, placeholder: 'What the client said' },
+        { key: 'name', label: 'Client name*', type: 'text', max: 80, required: true },
+        { key: 'role', label: 'Role and company', type: 'text', max: 120, placeholder: 'e.g. Founder, Bloom Co' },
+        { key: 'avatar', label: 'Photo (optional)', type: 'image', hint: 'Square photo, shown as a small circle.' }
+      ],
+      title: function (d) { return d.name; }, sub: function (d) { return d.role; }, quote: function (d) { return d.quote; }, image: function (d) { return d.avatar; }
+    },
+    client: {
+      label: 'client logo', plural: 'Client logos', help: 'Logos in the scrolling "Trusted by brands" strip. Transparent PNG or WebP logos look best.',
+      fields: [
+        { key: 'name', label: 'Client name*', type: 'text', max: 80, required: true, hint: 'Shown instead of the logo if no image is uploaded.' },
+        { key: 'logo', label: 'Logo', type: 'image', hint: 'Light or white logos show best on the dark background.' },
+        { key: 'url', label: 'Link (optional)', type: 'url', placeholder: 'https://' }
+      ],
+      title: function (d) { return d.name; }, sub: function (d) { return d.url; }, image: function (d) { return d.logo; }
+    },
+    post: {
+      label: 'blog post', plural: 'Blog posts', help: 'Posts on the blog page. The 2 newest also show on the homepage.',
+      fields: [
+        { key: 'title', label: 'Title*', type: 'text', max: 160, required: true },
+        { key: 'date', label: 'Publish date', type: 'date' },
+        { key: 'summary', label: 'Summary', type: 'textarea', max: 400, hint: 'One or two sentences shown on the cards.' },
+        { key: 'image', label: 'Cover image', type: 'image', hint: 'Landscape, about 1600 x 900.' },
+        { key: 'body', label: 'Article', type: 'textarea', tall: true, max: 50000, hint: 'Separate paragraphs with a blank line. Start a line with # to make it a heading.' },
+        { key: 'url', label: 'External link (optional)', type: 'url', placeholder: 'https://', hint: 'Adds a "Read the full article" button, for posts published elsewhere.' }
+      ],
+      title: function (d) { return d.title; }, sub: function (d) { return d.date; }, image: function (d) { return d.image; }
+    }
+  };
+  var ct = { type: 'project', items: [], editing: null };
+
+  function loadContent() {
+    var isSettings = ct.type === 'booking';
+    $('#content-list').hidden = isSettings;
+    $('#booking-settings').hidden = !isSettings;
+    $('#content-add').hidden = isSettings;
+    if (isSettings) { $('#content-help').textContent = 'When people can book calls from the contact page.'; return loadBookingSettings(); }
+    var T = TYPES[ct.type];
+    $('#content-help').textContent = T.help;
+    $('#content-add-label').textContent = 'Add ' + T.label;
+    var list = $('#content-list');
+    list.replaceChildren(el('p', { class: 'list-empty', text: 'Loading' }));
+    var type = ct.type;
+    return api('/api/admin/content?type=' + type).then(function (d) {
+      if (ct.type !== type) return;
+      ct.items = d.items; renderContent();
+    }).catch(function (err) { if (err.status !== 401) list.replaceChildren(el('p', { class: 'list-empty', text: err.message })); });
+  }
+
+  function iconSvg(name, size) {
+    var o = ICON_OPTIONS.find(function (x) { return x[0] === name; }) || ICON_OPTIONS[0];
+    return '<svg width="' + (size || 28) + '" height="' + (size || 28) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' + o[2] + '</svg>';
+  }
+
+  function renderContent() {
+    var T = TYPES[ct.type], list = $('#content-list');
+    if (!ct.items.length) { list.replaceChildren(el('p', { class: 'list-empty', text: 'Nothing here yet. Select "Add ' + T.label + '" to add one. Until you do, this section is hidden on the website.' })); return; }
+    list.replaceChildren.apply(list, ct.items.map(function (it, i) {
+      var d = it.data, img = T.image ? T.image(d) : '';
+      var thumb = T.icon ? el('div', { class: 'thumb', html: iconSvg(T.icon(d)) }) : el('div', { class: 'thumb' }, [img ? el('img', { src: img, alt: '' }) : 'No image']);
+      return el('div', { class: 'store-row' + (it.published ? '' : ' is-hidden') }, [
+        thumb,
+        el('div', { class: 'store-meta' }, [
+          el('strong', { text: T.title(d) || '(untitled)' }),
+          T.quote ? el('span', { class: 'content-quote', text: T.quote(d) }) : null,
+          el('div', { class: 'tags' }, [
+            T.sub(d) ? el('span', { class: 'tag', text: T.sub(d) }) : null,
+            it.published ? null : el('span', { class: 'tag tag--hidden', text: 'Hidden' })
+          ])
+        ]),
+        el('div', { class: 'row-actions' }, [
+          el('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Move up', disabled: i === 0, html: ICON.up, onclick: function () { moveContent(i, -1); } }),
+          el('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Move down', disabled: i === ct.items.length - 1, html: ICON.down, onclick: function () { moveContent(i, 1); } }),
+          el('button', { type: 'button', class: 'ghost-btn', onclick: function () { openContentEditor(it); } }, [el('span', { html: ICON.edit }), 'Edit']),
+          el('button', { type: 'button', class: 'icon-btn icon-btn--danger', 'aria-label': 'Delete', html: ICON.trash, onclick: function () { deleteContent(it); } })
+        ])
+      ]);
+    }));
+  }
+
+  function moveContent(i, dir) {
+    var k = i + dir;
+    if (k < 0 || k >= ct.items.length) return;
+    var t = ct.items[i]; ct.items[i] = ct.items[k]; ct.items[k] = t;
+    renderContent();
+    api('/api/admin/content', { method: 'PATCH', json: { order: ct.items.map(function (x) { return x.id; }) } }).catch(function (err) { toast(err.message, true); loadContent(); });
+  }
+  function deleteContent(it) {
+    var T = TYPES[ct.type];
+    if (!confirm('Delete this ' + T.label + '? This cannot be undone.')) return;
+    api('/api/admin/content?id=' + it.id, { method: 'DELETE' }).then(function () { toast('Deleted.'); loadContent(); }).catch(function (err) { toast(err.message, true); });
+  }
+
+  $$('[data-ctype]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      $$('[data-ctype]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      ct.type = b.getAttribute('data-ctype'); loadContent();
+    });
+  });
+  $('#content-add').addEventListener('click', function () { openContentEditor(null); });
+
+  /* ---------- Content editor ---------- */
+  var cForm = $('#content-form');
+  function buildField(f, value) {
+    var id = 'cf-' + f.key;
+    if (f.type === 'image') {
+      var status = el('span', { class: 'upload-status', text: value ? '' : 'No image yet' });
+      var bar = el('div', { class: 'progress', hidden: true }, [el('span')]);
+      var urlInput = el('input', { type: 'url', class: 'page-image', 'data-key': f.key, placeholder: 'Or paste an image link (https://...)', value: value || '', 'aria-label': f.label + ' link' });
+      var file = el('input', { type: 'file', accept: 'image/png,image/jpeg,image/webp', 'aria-label': 'Upload ' + f.label });
+      var row = el('div', { class: 'image-field' }, [
+        el('div', { class: 'thumb' }),
+        el('div', { class: 'page-fields' }, [
+          el('div', { class: 'upload-line' }, [el('label', { class: 'ghost-btn upload-btn' }, ['Upload image', file]),
+            el('button', { type: 'button', class: 'ghost-btn', text: 'Remove', onclick: function () { urlInput.value = ''; setThumb(row, ''); status.textContent = 'No image'; } }), status]),
+          bar, urlInput
+        ])
+      ]);
+      setThumb(row, value);
+      urlInput.addEventListener('change', function () { setThumb(row, urlInput.value.trim()); });
+      file.addEventListener('change', function () { var fl = file.files[0]; file.value = ''; if (fl) uploadInto(row, fl, { status: status, bar: bar, urlInput: urlInput }, 'content'); });
+      return el('div', { class: 'field' }, [el('span', { text: f.label }), f.hint ? el('small', { text: f.hint }) : null, row]);
+    }
+    if (f.type === 'icon') {
+      return el('fieldset', { class: 'field', style: 'border:0;padding:0;margin:0' }, [
+        el('legend', { text: f.label, style: 'margin-bottom:6px' }),
+        el('div', { class: 'icon-pick' }, ICON_OPTIONS.map(function (o) {
+          return el('label', {}, [el('input', { type: 'radio', name: 'icon', value: o[0], checked: (value || 'layout') === o[0], 'data-key': 'icon' }), el('span', { html: iconSvg(o[0], 22) + '<em style="font-style:normal">' + o[1] + '</em>' })]);
+        }))
+      ]);
+    }
+    var input;
+    if (f.type === 'textarea' || f.type === 'list') {
+      input = el('textarea', { id: id, 'data-key': f.key, class: f.tall ? 'tall' : null, maxlength: f.max || null, placeholder: f.placeholder || '' });
+      input.value = f.type === 'list' ? (value || []).join('\n') : (value || '');
+    } else {
+      input = el('input', { id: id, 'data-key': f.key, type: f.type === 'url' ? 'url' : f.type === 'date' ? 'date' : 'text', maxlength: f.max || null, placeholder: f.placeholder || '', value: value || '' });
+      if (f.type === 'date') input.style.colorScheme = 'dark';
+    }
+    return el('label', { class: 'field', for: id }, [f.label, f.hint ? el('small', { text: f.hint }) : null, input]);
+  }
+
+  function openContentEditor(it) {
+    var T = TYPES[ct.type];
+    ct.editing = it;
+    $('#content-editor-title').textContent = (it ? 'Edit ' : 'Add ') + T.label;
+    $('#content-msg').textContent = '';
+    var d = it ? it.data : (ct.type === 'post' ? { date: new Date().toISOString().slice(0, 10) } : {});
+    var box = $('#content-fields');
+    box.replaceChildren.apply(box, T.fields.map(function (f) { return buildField(f, d[f.key]); }).concat([
+      el('label', { class: 'toggle' }, [el('input', { type: 'checkbox', id: 'cf-published', checked: it ? it.published : true }), el('span', { class: 'switch', 'aria-hidden': 'true' }),
+        el('span', {}, [el('strong', { text: 'Show on website' }), el('small', { text: 'Turn off to hide it without deleting.' })])])
+    ]));
+    var dr = $('#content-editor');
+    dr.hidden = false; document.body.style.overflow = 'hidden';
+    requestAnimationFrame(function () { requestAnimationFrame(function () { dr.classList.add('is-open'); }); });
+    var first = $('input[type="text"], textarea', box); if (first) first.focus();
+  }
+  function closeContentEditor() {
+    if ($('.image-field[data-uploading="1"]') && !confirm('An image is still uploading. Close anyway?')) return;
+    var dr = $('#content-editor');
+    dr.classList.remove('is-open'); document.body.style.overflow = '';
+    setTimeout(function () { dr.hidden = true; }, 350);
+  }
+  $$('[data-close-content]').forEach(function (b) { b.addEventListener('click', closeContentEditor); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('#content-editor').hidden) closeContentEditor(); });
+
+  cForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var T = TYPES[ct.type], msg = $('#content-msg');
+    if ($('.image-field[data-uploading="1"]')) { msg.textContent = 'Wait for the image to finish uploading.'; return; }
+    var data = {};
+    T.fields.forEach(function (f) {
+      if (f.type === 'icon') { var c = $('input[name="icon"]:checked', cForm); data.icon = c ? c.value : 'layout'; return; }
+      var inp = $('[data-key="' + f.key + '"]', cForm);
+      var v = inp ? inp.value.trim() : '';
+      data[f.key] = f.type === 'list' ? v.split('\n').map(function (x) { return x.trim(); }).filter(Boolean) : v;
+    });
+    var missing = T.fields.find(function (f) { return f.required && !data[f.key]; });
+    if (missing) { msg.textContent = 'Fill in ' + missing.label.replace('*', '').toLowerCase() + '.'; $('[data-key="' + missing.key + '"]', cForm).focus(); return; }
+    var published = $('#cf-published').checked;
+    var btn = $('#content-save'); btn.disabled = true; btn.textContent = 'Saving';
+    var req = ct.editing
+      ? api('/api/admin/content', { method: 'PUT', json: { id: ct.editing.id, data: data, published: published } })
+      : api('/api/admin/content', { method: 'POST', json: { type: ct.type, data: data, published: published } });
+    req.then(function () {
+      toast('Saved. The website shows it within a minute.');
+      closeContentEditor(); loadContent();
+    }).catch(function (err) { msg.textContent = err.message; })
+      .then(function () { btn.disabled = false; btn.textContent = 'Save'; });
+  });
+
+  /* ---------- Booking settings ---------- */
+  var DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  var ZONES = ['Asia/Manila', 'Asia/Singapore', 'Asia/Hong_Kong', 'Asia/Tokyo', 'Asia/Dubai', 'Asia/Kolkata', 'Australia/Sydney', 'Australia/Melbourne', 'Australia/Brisbane', 'Australia/Perth', 'Pacific/Auckland', 'Europe/London', 'Europe/Berlin', 'Europe/Paris', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles', 'America/Toronto', 'UTC'];
+  var bset = null;
+
+  function loadBookingSettings() {
+    var f = $('#booking-settings');
+    f.replaceChildren(el('p', { class: 'muted', text: 'Loading settings' }));
+    return api('/api/admin/content?settings=booking').then(function (d) { bset = d.booking; renderBookingSettings(); })
+      .catch(function (err) { f.replaceChildren(el('p', { class: 'form-msg', text: err.message })); });
+  }
+  function fmtSlot(t) { var p = t.split(':').map(Number); var d = new Date(2000, 0, 1, p[0], p[1]); return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }); }
+
+  function renderBookingSettings() {
+    var f = $('#booking-settings');
+    var slotsBox = el('div', { class: 'slot-chips' });
+    var drawSlots = function () {
+      bset.slots.sort();
+      slotsBox.replaceChildren.apply(slotsBox, bset.slots.length ? bset.slots.map(function (t) {
+        return el('span', { class: 'slot-chip' }, [fmtSlot(t), el('button', { type: 'button', 'aria-label': 'Remove ' + fmtSlot(t), html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>', onclick: function () { bset.slots = bset.slots.filter(function (x) { return x !== t; }); drawSlots(); } })]);
+      }) : [el('span', { class: 'muted', text: 'No times yet. Add at least one.' })]);
+    };
+    drawSlots();
+    var newSlot = el('input', { type: 'time', value: '09:00', 'aria-label': 'New time slot', step: '900' });
+    var zoneList = el('datalist', { id: 'zone-list' }, ZONES.map(function (z) { return el('option', { value: z }); }));
+    var msg = el('p', { class: 'form-msg', role: 'alert' });
+    var num = function (name, label, value, min, max, hint) {
+      return el('label', { class: 'field' }, [label, el('input', { type: 'number', name: name, value: String(value), min: String(min), max: String(max) }), hint ? el('small', { text: hint }) : null]);
+    };
+    f.replaceChildren(
+      el('label', { class: 'toggle' }, [el('input', { type: 'checkbox', name: 'enabled', checked: bset.enabled }), el('span', { class: 'switch', 'aria-hidden': 'true' }),
+        el('span', {}, [el('strong', { text: 'Accept call bookings' }), el('small', { text: 'Turn off to pause booking. Visitors are asked to send a message instead.' })])]),
+      el('label', { class: 'field' }, ['Your time zone', el('input', { type: 'text', name: 'timezone', value: bset.timezone, list: 'zone-list', placeholder: 'e.g. Asia/Manila' }), el('small', { text: 'Your time slots are in this time zone. Visitors see them converted to their own.' }), zoneList]),
+      el('fieldset', { class: 'field', style: 'border:0;padding:0;margin:0' }, [el('legend', { text: 'Days you take calls', style: 'margin-bottom:8px' }),
+        el('div', { class: 'day-pick' }, DAYS.map(function (dname, i) { return el('label', {}, [el('input', { type: 'checkbox', name: 'day', value: String(i), checked: bset.days.indexOf(i) > -1 }), el('span', { text: dname })]); }))]),
+      el('div', { class: 'field' }, [el('span', { text: 'Start times' }), el('small', { text: 'Each time is one bookable call. Remove a time to stop offering it.' }), slotsBox,
+        el('div', { class: 'add-slot' }, [newSlot, el('button', { type: 'button', class: 'ghost-btn', text: 'Add time', onclick: function () {
+          var v = newSlot.value; if (!/^\d{2}:\d{2}$/.test(v)) return;
+          if (bset.slots.indexOf(v) === -1) bset.slots.push(v); drawSlots();
+        } })])]),
+      el('div', { class: 'row-3' }, [
+        el('label', { class: 'field' }, ['Call length', el('select', { name: 'duration' }, [15, 20, 30, 45, 60, 90].map(function (m) { return el('option', { value: String(m), selected: bset.duration === m, text: m + ' minutes' }); }))]),
+        num('daysAhead', 'Book up to (days ahead)', bset.daysAhead, 1, 120),
+        num('minNoticeHours', 'Minimum notice (hours)', bset.minNoticeHours, 0, 336)
+      ]),
+      el('div', { class: 'settings-foot' }, [msg, el('button', { type: 'submit', class: 'btn', text: 'Save settings' })])
+    );
+  }
+  $('#booking-settings').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var f = e.target, msg = $('.form-msg', f), btn = $('button[type="submit"]', f);
+    var payload = {
+      enabled: f.enabled.checked, timezone: f.timezone.value.trim(),
+      days: $$('input[name="day"]:checked', f).map(function (x) { return Number(x.value); }),
+      slots: bset.slots, duration: Number(f.duration.value), daysAhead: Number(f.daysAhead.value), minNoticeHours: Number(f.minNoticeHours.value)
+    };
+    msg.textContent = '';
+    btn.disabled = true; btn.textContent = 'Saving';
+    api('/api/admin/content?settings=booking', { method: 'PUT', json: payload }).then(function (d) {
+      bset = d.booking; renderBookingSettings(); toast('Booking settings saved.');
+    }).catch(function (err) { msg.textContent = err.message; btn.disabled = false; btn.textContent = 'Save settings'; });
+  });
 
   /* =========================================================
      Live chat
@@ -588,6 +1017,7 @@
       if ($('#app').hidden) return;
       if (currentView !== 'chat' && !document.hidden) {
         api('/api/admin/chat?status=open').then(function (d) { setUnread(d.unread, d.open); }).catch(function () {});
+        if (currentView !== 'bookings') api('/api/admin/submissions?kind=booking&status=upcoming').then(function (d) { setBookingBadge(d.counts.newBookings); }).catch(function () {});
       }
       watchTimer = setTimeout(tick, 15000);
     };
@@ -773,7 +1203,7 @@
   });
 
   /* ---------- Start ---------- */
-  api('/api/auth/me', { allow401: true }).then(showApp).catch(function (err) {
+  api('/api/auth', { allow401: true }).then(showApp).catch(function (err) {
     showLogin(err.status === 401 ? '' : err.message);
   });
 })();

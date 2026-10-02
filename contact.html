@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Contact Us | PrimeSphere</title>
+<meta name="description" content="Send PrimeSphere a message or book a free call about your Shopify store, website or marketing.">
+<meta name="theme-color" content="#050B18">
+<meta property="og:title" content="PrimeSphere | Global Opportunities, Real Results">
+<meta property="og:description" content="Design, development and digital marketing that delivers measurable results.">
+<meta property="og:image" content="assets/logo-full.png">
+<link rel="icon" type="image/png" href="assets/icon.png">
+<link rel="apple-touch-icon" href="assets/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script>document.documentElement.classList.remove('no-js');</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="progress" aria-hidden="true"></div>
+
+<!-- ============ HEADER ============ -->
+<header class="header" id="header">
+  <nav class="wrap nav" aria-label="Main">
+    <a href="index.html" class="brand" aria-label="PrimeSphere home">
+      <img src="assets/logo-mark.png" alt="" width="82" height="40">
+      <span>PRIME<b>SPHERE</b></span>
+    </a>
+    <ul class="nav-links" id="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="index.html#services">Services</a></li>
+      <li><a href="index.html#work">Work</a></li>
+      <li><a href="stores.html">Stores</a></li>
+      <li><a href="index.html#process">Process</a></li>
+      <li><a href="index.html#insights">Insights</a></li>
+      <li><a href="contact.html" class="is-active" aria-current="page">Contact</a></li>
+    </ul>
+    <div class="nav-actions">
+      <a href="contact.html" class="btn btn--outline">Let's Talk</a>
+      <a href="contact.html" class="btn btn--icon" aria-label="Start a project">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg>
+      </a>
+      <button class="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+</header>
+
+<main id="main">
+
+<section class="page-hero">
+  <div class="wrap">
+    <a href="index.html" class="back-link fade-in" style="--d:.1s"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back to home</a>
+    <h1>
+      <span class="line"><span>Let's Work</span></span>
+      <span class="line"><span class="hl">Together.</span></span>
+    </h1>
+    <p class="lede fade-in" style="--d:.45s">Send us a message about your project, or book a free call and talk it through with the team.</p>
+  </div>
+</section>
+
+<section class="section contact-page">
+  <div class="wrap contact-layout">
+    <aside class="contact-aside fade-in" style="--d:.55s">
+      <span class="eyebrow">Get in Touch</span>
+      <!-- Replace with your real contact details -->
+      <ul class="details">
+        <li><strong>Email:</strong> <a href="mailto:hello@yourdomain.com">hello@yourdomain.com</a></li>
+        <li><strong>Phone:</strong> <a href="tel:+000000000000">+00 000 000 0000</a></li>
+        <li><strong>Address:</strong> Your street, City, Country</li>
+      </ul>
+      <div class="contact-points">
+        <div><h3>Send a message</h3><p>Tell us what you need. We reply within one business day.</p></div>
+        <div><h3>Book a call</h3><p>Pick a time that suits you for a free call about your store, site or marketing.</p></div>
+      </div>
+    </aside>
+
+    <div class="contact-card fade-in" style="--d:.65s">
+      <div class="contact-tabs" role="tablist" aria-label="How would you like to reach us?">
+        <button type="button" role="tab" id="tab-message" aria-controls="panel-message" aria-selected="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+          Send a message
+        </button>
+        <button type="button" role="tab" id="tab-booking" aria-controls="panel-booking" aria-selected="false" tabindex="-1">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          Book a call
+        </button>
+      </div>
+
+      <div class="contact-panel" role="tabpanel" id="panel-message" aria-labelledby="tab-message">
+        <h2 class="panel-title">Contact us</h2>
+        <form class="form js-contact-form" id="message-form" novalidate data-endpoint="/api/contact" data-email="hello@yourdomain.com">
+      <div class="hp" aria-hidden="true"><label>Leave this empty<input type="url" name="website" tabindex="-1" autocomplete="off"></label></div>
+      <div class="form-row">
+        <label class="field">First Name*<input name="firstName" type="text" autocomplete="given-name" placeholder="First name" required><span class="field-error"></span></label>
+        <label class="field">Last Name*<input name="lastName" type="text" autocomplete="family-name" placeholder="Last name" required><span class="field-error"></span></label>
+      </div>
+      <div class="form-row">
+        <label class="field">From<input name="company" type="text" autocomplete="organization" placeholder="Company name"><span class="field-error"></span></label>
+        <label class="field">I need help with<input name="helpWith" type="text" placeholder="Tell us more about your project"><span class="field-error"></span></label>
+      </div>
+      <fieldset class="field chip-group" data-required="Choose at least one topic.">
+        <legend>I'd like to discuss*</legend>
+        <div class="chips">
+          <label class="chip"><input type="checkbox" name="discuss" value="Website Design & Development"><span>Website Design &amp; Development</span></label>
+          <label class="chip"><input type="checkbox" name="discuss" value="Digital Marketing"><span>Digital Marketing</span></label>
+          <label class="chip"><input type="checkbox" name="discuss" value="SEO"><span>SEO</span></label>
+          <label class="chip"><input type="checkbox" name="discuss" value="Asset Creation"><span>Asset Creation</span></label>
+          <label class="chip"><input type="checkbox" name="discuss" value="Paid Social Media"><span>Paid Social Media</span></label>
+          <label class="chip"><input type="checkbox" name="discuss" value="Others"><span>Others</span></label>
+        </div>
+        <span class="field-error"></span>
+      </fieldset>
+      <fieldset class="field chip-group" data-required="Choose a monthly budget.">
+        <legend>My monthly budget is*</legend>
+        <div class="chips">
+          <label class="chip"><input type="radio" name="budget" value="<$5K"><span>&lt;$5K</span></label>
+          <label class="chip"><input type="radio" name="budget" value="$5K - $10K"><span>$5K - $10K</span></label>
+          <label class="chip"><input type="radio" name="budget" value="$10K - $50K"><span>$10K - $50K</span></label>
+          <label class="chip"><input type="radio" name="budget" value="$50K+"><span>$50K+</span></label>
+        </div>
+        <span class="field-error"></span>
+      </fieldset>
+      <div class="form-row">
+        <label class="field">Reply to*<input name="email" type="email" autocomplete="email" placeholder="Email" required data-error="Enter your email address."><span class="field-error"></span></label>
+        <label class="field">Call me on*<input name="phone" type="tel" autocomplete="tel" placeholder="Phone number" required data-error="Enter your phone number."><span class="field-error"></span></label>
+      </div>
+      <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+        <button type="submit" class="btn">Send Message
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg>
+        </button>
+        <p class="form-status" role="status"></p>
+      </div>
+    </form>
+      </div>
+
+      <div class="contact-panel" role="tabpanel" id="panel-booking" aria-labelledby="tab-booking" hidden>
+        <h2 class="panel-title">Book a call with us</h2>
+        <p class="booking-loading" id="booking-loading">Loading available times</p>
+        <p class="booking-paused" id="booking-paused" hidden>Call booking is paused right now. Send us a message instead and we will set up a time with you.</p>
+
+        <form class="form booking-form" id="booking-form" novalidate hidden>
+          <div class="hp" aria-hidden="true"><label>Leave this empty<input type="url" name="website" tabindex="-1" autocomplete="off"></label></div>
+          <fieldset class="booking-step">
+            <legend><span class="step-num-b">1</span> Choose a date and time</legend>
+            <div class="booking-pick">
+              <div class="calendar" id="calendar">
+                <div class="cal-head">
+                  <button type="button" class="cal-nav" data-cal="-1" aria-label="Previous month"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+                  <h3 class="cal-title" id="cal-title" aria-live="polite"></h3>
+                  <button type="button" class="cal-nav" data-cal="1" aria-label="Next month"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+                </div>
+                <div class="cal-week" aria-hidden="true"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
+                <div class="cal-grid" id="cal-grid" role="grid" aria-labelledby="cal-title"></div>
+              </div>
+              <div class="slots">
+                <h3 class="slots-title" id="slots-title">Choose a date first</h3>
+                <div class="slot-list" id="slot-list" role="group" aria-labelledby="slots-title"></div>
+                <p class="tz-note" id="tz-note"></p>
+              </div>
+            </div>
+            <p class="field-error" id="slot-error"></p>
+          </fieldset>
+
+          <fieldset class="booking-step">
+            <legend><span class="step-num-b">2</span> Your details</legend>
+            <div class="form-row">
+              <label class="field">First Name*<input name="firstName" type="text" autocomplete="given-name" placeholder="First name" required><span class="field-error"></span></label>
+              <label class="field">Last Name*<input name="lastName" type="text" autocomplete="family-name" placeholder="Last name" required><span class="field-error"></span></label>
+            </div>
+            <div class="form-row">
+              <label class="field">Email*<input name="email" type="email" autocomplete="email" placeholder="Email" required data-error="Enter your email address."><span class="field-error"></span></label>
+              <label class="field">Phone*<input name="phone" type="tel" autocomplete="tel" placeholder="Phone number" required data-error="Enter your phone number."><span class="field-error"></span></label>
+            </div>
+            <label class="field">Company<input name="company" type="text" autocomplete="organization" placeholder="Company name"><span class="field-error"></span></label>
+            <fieldset class="field chip-group" data-required="Choose at least one topic.">
+              <legend>What would you like to talk about?*</legend>
+              <div class="chips">
+            <label class="chip"><input type="checkbox" name="discuss" value="Website Design & Development"><span>Website Design &amp; Development</span></label>
+            <label class="chip"><input type="checkbox" name="discuss" value="Digital Marketing"><span>Digital Marketing</span></label>
+            <label class="chip"><input type="checkbox" name="discuss" value="SEO"><span>SEO</span></label>
+            <label class="chip"><input type="checkbox" name="discuss" value="Asset Creation"><span>Asset Creation</span></label>
+            <label class="chip"><input type="checkbox" name="discuss" value="Paid Social Media"><span>Paid Social Media</span></label>
+            <label class="chip"><input type="checkbox" name="discuss" value="Others"><span>Others</span></label>
+              </div>
+              <span class="field-error"></span>
+            </fieldset>
+            <label class="field">Anything we should know before the call?<textarea name="helpWith" rows="4" placeholder="Your store link, goals, questions"></textarea><span class="field-error"></span></label>
+          </fieldset>
+
+          <div class="booking-submit">
+            <p class="booking-summary" id="booking-summary">No time selected yet.</p>
+            <button type="submit" class="btn">Book Call <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg></button>
+          </div>
+          <p class="form-status" role="status"></p>
+        </form>
+
+        <div class="booking-done" id="booking-done" hidden tabindex="-1">
+          <div class="done-icon" aria-hidden="true"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+          <h3>Your call is booked</h3>
+          <p id="done-when"></p>
+          <p class="muted-p">We will email you to confirm. Need to change it? Reply to that email or send us a message.</p>
+          <div class="done-actions">
+            <a class="btn" id="done-gcal" href="#" target="_blank" rel="noopener">Add to Google Calendar</a>
+            <button type="button" class="btn btn--outline" id="done-again">Book another call</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <div class="footer-brand">
+      <img src="assets/logo-mark.png" alt="" width="58" height="28">
+      <span>© <span id="year">2026</span> PrimeSphere. Global opportunities, real results.</span>
+    </div>
+    <ul class="footer-links">
+      <li><a href="index.html#top">Home</a></li><li><a href="index.html#services">Services</a></li><li><a href="index.html#work">Work</a></li>
+      <li><a href="blog.html">Blog</a></li><li><a href="index.html#contact">Contact</a></li>
+    </ul>
+  </div>
+</footer>
+
+<button class="to-top" aria-label="Back to top">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+</button>
+
+<script src="script.js" defer></script>
+<script src="chat.js" defer></script>
+<script src="booking.js" defer></script>
+</body>
+</html>
