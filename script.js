@@ -123,7 +123,7 @@
     dots.forEach(function (d, n) { d.setAttribute('aria-current', String(n === current)); });
   }
   function autoplay() {
-    if (reduceMotion) return;
+    if (reduceMotion || !slides.length) return;
     clearInterval(timer);
     timer = setInterval(function () { goTo(current + 1); }, 5000);
   }
@@ -143,7 +143,7 @@
     quotes.forEach(function (el, n) { el.classList.toggle('is-active', n === q); });
   }
   function qAuto() {
-    if (reduceMotion) return;
+    if (reduceMotion || !quotes.length) return;
     clearInterval(qTimer);
     qTimer = setInterval(function () { showQuote(q + 1); }, 7000);
   }
@@ -224,9 +224,13 @@
     var lbPanel = $('.lightbox-panel', lb);
     var lbIndex = 0, lastFocus = null;
 
+    function visibleShots() {
+      return shots.filter(function (s) { var st = s.closest('.store'); return !st || !st.hidden; });
+    }
     function load(i) {
-      lbIndex = (i + shots.length) % shots.length;
-      var b = shots[lbIndex];
+      var list = visibleShots();
+      lbIndex = (i + list.length) % list.length;
+      var b = list[lbIndex];
       lbImg.classList.remove('is-ready');
       lbImg.onload = function () { lbImg.classList.add('is-ready'); };
       lbImg.src = b.getAttribute('data-full');
@@ -236,10 +240,11 @@
       lbVisit.href = b.getAttribute('data-url') || '#';
       lbScroll.scrollTop = 0;
     }
-    function open(i) {
+    function open(btn) {
       lastFocus = document.activeElement;
+      var i = visibleShots().indexOf(btn);
       // Zoom from the clicked card
-      var r = shots[i].getBoundingClientRect();
+      var r = btn.getBoundingClientRect();
       lbPanel.style.setProperty('--ox', (r.left + r.width / 2) + 'px');
       lbPanel.style.setProperty('--oy', (r.top + r.height / 2) + 'px');
       load(i);
@@ -259,7 +264,7 @@
       setTimeout(function () { lb.hidden = true; }, reduceMotion ? 0 : 400);
       if (lastFocus) lastFocus.focus();
     }
-    shots.forEach(function (b, i) { b.addEventListener('click', function () { open(i); }); });
+    shots.forEach(function (b) { b.addEventListener('click', function () { open(b); }); });
     $$('[data-close]', lb).forEach(function (el) { el.addEventListener('click', close); });
     $$('[data-nav]', lb).forEach(function (el) {
       el.addEventListener('click', function () { load(lbIndex + parseInt(el.getAttribute('data-nav'), 10)); });
@@ -276,6 +281,31 @@
         if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
         else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
       }
+    });
+  }
+
+  /* ---------- Store filters (stores page) ---------- */
+  var filterBtns = $$('[data-filter]');
+  if (filterBtns.length) {
+    var allStores = $$('.store[data-category]');
+    var countEl = $('.store-count');
+    filterBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var f = btn.getAttribute('data-filter');
+        filterBtns.forEach(function (b) { b.setAttribute('aria-pressed', String(b === btn)); });
+        var n = 0;
+        allStores.forEach(function (s, i) {
+          var show = f === 'all' || s.getAttribute('data-category') === f;
+          s.hidden = !show;
+          if (show) {
+            n++;
+            s.classList.remove('is-in');
+            s.style.setProperty('--d', ((n - 1) % 3) * 0.08 + 's');
+            requestAnimationFrame(function () { requestAnimationFrame(function () { s.classList.add('is-in'); }); });
+          }
+        });
+        if (countEl) countEl.textContent = n + (n === 1 ? ' store' : ' stores');
+      });
     });
   }
 
