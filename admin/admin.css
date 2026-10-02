@@ -240,6 +240,37 @@ p { margin: 0; }
 }
 .quick-pages button:hover { border-color: var(--accent); color: var(--text); }
 
+/* ---------- Live chat ---------- */
+.toggle--inline { padding: 8px 12px; }
+.toggle--inline strong { font-size: 13px; }
+.split--chat { grid-template-columns: minmax(0, 360px) minmax(0, 1fr); }
+.chat-item .msg-sub { display: flex; gap: 8px; }
+.chat-item .msg-sub span:first-child { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.unread-pill { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--accent-fill); color: #fff; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+.chat-thread { display: flex; flex-direction: column; height: calc(100vh - 250px); min-height: 460px; }
+.thread-head { padding: 16px 20px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; flex: none; }
+.thread-head h2 { font-size: 18px; }
+.thread-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); margin-top: 4px; }
+.thread-meta a { color: var(--accent); }
+.thread-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.thread-log { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+.t-row { display: flex; max-width: 78%; }
+.t-row--admin { align-self: flex-end; }
+.t-row--visitor { align-self: flex-start; }
+.t-bubble { padding: 10px 14px; border-radius: 14px; white-space: pre-wrap; overflow-wrap: anywhere; display: flex; flex-direction: column; gap: 2px; font-size: 14.5px; }
+.t-row--visitor .t-bubble { background: var(--surface-3); border-bottom-left-radius: 4px; }
+.t-row--admin .t-bubble { background: var(--accent-fill); color: #fff; border-bottom-right-radius: 4px; }
+.t-bubble time { font-size: 11px; opacity: 0.65; align-self: flex-end; }
+.t-system { align-self: center; font-size: 12.5px; color: var(--muted); }
+.thread-compose { border-top: 1px solid var(--line); padding: 12px 16px; display: flex; gap: 10px; align-items: flex-end; flex: none; }
+.thread-compose textarea {
+  flex: 1; resize: none; min-height: 46px; max-height: 160px; padding: 12px 14px; border-radius: 8px;
+  border: 1px solid var(--line-2); background: rgba(255,255,255,0.03); color: var(--text); line-height: 1.4;
+}
+.thread-compose textarea:focus { outline: none; border-color: var(--accent); }
+.thread-note { padding: 14px 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; flex: none; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.thread-hint { font-size: 12px; color: var(--muted); padding: 0 16px 10px; flex: none; }
+
 /* ---------- Toast ---------- */
 .toast {
   position: fixed; left: 50%; bottom: 24px; z-index: 80; transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
@@ -255,6 +286,8 @@ p { margin: 0; }
   .msg-list { max-height: none; }
   .split.has-detail .msg-list { display: none; }
   .split:not(.has-detail) .msg-detail { display: none; }
+  .split--chat { grid-template-columns: 1fr; }
+  .chat-thread { height: calc(100vh - 140px); }
   .back-btn { display: inline-flex; }
 }
 @media (max-width: 640px) {

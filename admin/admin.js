@@ -58,6 +58,7 @@
 
   /* ---------- Auth ---------- */
   function showLogin(msg) {
+    if (typeof stopChatPolling === 'function') stopChatPolling();
     $('#boot').hidden = true;
     $('#app').hidden = true;
     $('#login').hidden = false;
@@ -68,7 +69,9 @@
     $('#boot').hidden = true;
     $('#login').hidden = true;
     $('#app').hidden = false;
-    setView(location.hash === '#stores' ? 'stores' : 'messages');
+    var h = location.hash.slice(1);
+    setView(['messages', 'chat', 'stores'].indexOf(h) > -1 ? h : 'messages');
+    startUnreadWatch();
   }
 
   $('#login-form').addEventListener('submit', function (e) {
@@ -90,14 +93,20 @@
   });
 
   /* ---------- Views ---------- */
+  var currentView = 'messages';
   function setView(name) {
+    currentView = name;
     $$('.tab').forEach(function (t) {
       if (t.getAttribute('data-view') === name) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
     });
     $('#view-messages').hidden = name !== 'messages';
+    $('#view-chat').hidden = name !== 'chat';
     $('#view-stores').hidden = name !== 'stores';
-    history.replaceState(null, '', name === 'stores' ? '#stores' : '#messages');
-    if (name === 'messages') loadMessages(); else loadStores();
+    history.replaceState(null, '', '#' + name);
+    stopChatPolling();
+    if (name === 'messages') loadMessages();
+    else if (name === 'chat') startChatPolling();
+    else loadStores();
   }
   $$('.tab').forEach(function (t) { t.addEventListener('click', function () { setView(t.getAttribute('data-view')); }); });
 
@@ -530,6 +539,237 @@
       loadStores();
     }).catch(function (err) { msg.textContent = err.message; })
       .then(function () { btn.disabled = false; btn.textContent = 'Save store'; });
+  });
+
+
+  /* =========================================================
+     Live chat
+     ========================================================= */
+  var chat = { status: 'open', sessions: [], selected: null, session: null, messages: [], lastUnread: null };
+  var listTimer = null, threadTimer = null, watchTimer = null;
+  var baseTitle = document.title;
+
+  function shortId(id) { return 'Visitor ' + String(id).slice(0, 4).toUpperCase(); }
+  function chatName(s) { return s.name || s.email || shortId(s.id); }
+
+  // Soft two-note chime made with Web Audio (no sound file needed).
+  var audioCtx = null;
+  function chime() {
+    if (!$('#chat-sound').checked) return;
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      [660, 880].forEach(function (f, i) {
+        var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.frequency.value = f; o.type = 'sine';
+        g.gain.setValueAtTime(0.0001, audioCtx.currentTime + i * 0.14);
+        g.gain.exponentialRampToValueAtTime(0.18, audioCtx.currentTime + i * 0.14 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + i * 0.14 + 0.3);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(audioCtx.currentTime + i * 0.14); o.stop(audioCtx.currentTime + i * 0.14 + 0.32);
+      });
+    } catch (e) {}
+  }
+  try { $('#chat-sound').checked = localStorage.getItem('ps_admin_sound') !== 'off'; } catch (e) {}
+  $('#chat-sound').addEventListener('change', function (e) { try { localStorage.setItem('ps_admin_sound', e.target.checked ? 'on' : 'off'); } catch (x) {} });
+
+  function setUnread(n, open) {
+    var b = $('#chat-badge');
+    b.hidden = !n; b.textContent = n;
+    $('#chat-open-count').textContent = open ? open : '';
+    document.title = n ? '(' + n + ') New chat message | ' + baseTitle : baseTitle;
+    if (chat.lastUnread !== null && n > chat.lastUnread) chime();
+    chat.lastUnread = n;
+  }
+
+  // Badge + sound on every tab of the admin, checked every 15 seconds.
+  function startUnreadWatch() {
+    clearTimeout(watchTimer);
+    var tick = function () {
+      if ($('#app').hidden) return;
+      if (currentView !== 'chat' && !document.hidden) {
+        api('/api/admin/chat?status=open').then(function (d) { setUnread(d.unread, d.open); }).catch(function () {});
+      }
+      watchTimer = setTimeout(tick, 15000);
+    };
+    tick();
+  }
+
+  function startChatPolling() { loadChatList(); if (chat.selected) loadThread(true); }
+  function stopChatPolling() { clearTimeout(listTimer); clearTimeout(threadTimer); }
+
+  function loadChatList() {
+    clearTimeout(listTimer);
+    var list = $('#chat-list');
+    if (!chat.sessions.length && !list.children.length) list.replaceChildren(el('p', { class: 'list-empty', text: 'Loading chats' }));
+    api('/api/admin/chat?status=' + chat.status).then(function (d) {
+      chat.sessions = d.sessions;
+      setUnread(d.unread, d.open);
+      renderChatList();
+    }).catch(function (err) {
+      if (err.status !== 401) list.replaceChildren(el('p', { class: 'list-empty', text: err.message }));
+    }).then(function () {
+      if (currentView === 'chat' && !$('#app').hidden) listTimer = setTimeout(loadChatList, document.hidden ? 20000 : 4000);
+    });
+  }
+
+  function renderChatList() {
+    var list = $('#chat-list');
+    if (!chat.sessions.length) {
+      list.replaceChildren(el('p', { class: 'list-empty', text: chat.status === 'open' ? 'No open chats right now. When a visitor sends a message it appears here.' : 'No chats here yet.' }));
+      return;
+    }
+    list.replaceChildren.apply(list, chat.sessions.map(function (s) {
+      var current = chat.selected === s.id;
+      return el('button', {
+        type: 'button', class: 'msg-item chat-item', 'data-status': s.unread && !current ? 'new' : 'read', 'aria-current': String(current),
+        onclick: function () { openChat(s.id); }
+      }, [
+        el('span', { class: 'dot' + (s.status === 'open' ? '' : ' dot--off'), title: s.status === 'open' ? 'Open' : 'Ended' }),
+        el('span', { class: 'msg-name', text: chatName(s) }),
+        el('span', { class: 'msg-date', text: fmtDate(s.lastMessageAt) }),
+        el('span', { class: 'msg-sub' }, [
+          el('span', { text: (s.previewSender === 'admin' ? 'You: ' : '') + (s.preview || '') }),
+          s.unread && !current ? el('span', { class: 'unread-pill', text: String(s.unread) }) : null,
+          s.rating ? el('span', { text: s.rating === 'up' ? 'Rated good' : 'Rated bad' }) : null
+        ])
+      ]);
+    }));
+  }
+
+  function openChat(id) {
+    chat.selected = id; chat.messages = []; chat.session = null;
+    renderChatList();
+    loadThread(true);
+    if (window.matchMedia('(max-width: 900px)').matches) window.scrollTo({ top: 0 });
+  }
+
+  function loadThread(full) {
+    clearTimeout(threadTimer);
+    var id = chat.selected;
+    if (!id) return renderThread();
+    var after = full ? 0 : (chat.messages.length ? chat.messages[chat.messages.length - 1].id : 0);
+    api('/api/admin/chat?id=' + encodeURIComponent(id) + '&after=' + after).then(function (d) {
+      if (chat.selected !== id) return;
+      var changed = full || d.messages.length || !chat.session || d.session.status !== chat.session.status || d.session.email !== chat.session.email || d.session.rating !== chat.session.rating;
+      chat.session = d.session;
+      chat.messages = full ? d.messages : chat.messages.concat(d.messages.filter(function (m) { return !chat.messages.some(function (x) { return x.id === m.id; }); }));
+      if (changed) renderThread(full);
+    }).catch(function (err) {
+      if (err.status === 404) { chat.selected = null; renderThread(); loadChatList(); }
+    }).then(function () {
+      if (currentView === 'chat' && chat.selected === id && !$('#app').hidden) threadTimer = setTimeout(function () { loadThread(false); }, document.hidden ? 15000 : 3000);
+    });
+  }
+
+  function renderThread(scrollToEnd) {
+    var box = $('#chat-thread');
+    var split = $('.split--chat');
+    var s = chat.session;
+    split.classList.toggle('has-detail', !!chat.selected);
+    if (!chat.selected || !s) {
+      if (!chat.selected) box.replaceChildren(el('div', { class: 'empty-detail' }, [el('p', { text: 'Select a chat to reply.' })]));
+      return;
+    }
+    var oldLog = $('.thread-log', box);
+    var nearBottom = !oldLog || oldLog.scrollHeight - oldLog.scrollTop - oldLog.clientHeight < 120;
+    var draft = $('#reply-box') ? $('#reply-box').value : '';
+    var hadFocus = document.activeElement && document.activeElement.id === 'reply-box';
+
+    var logEl = el('div', { class: 'thread-log', role: 'log', 'aria-live': 'polite' }, chat.messages.map(function (m) {
+      if (m.sender === 'system') return el('p', { class: 't-system', text: m.body + ' · ' + fmtDate(m.createdAt) });
+      return el('div', { class: 't-row t-row--' + m.sender }, [
+        el('div', { class: 't-bubble' }, [
+          el('span', { class: 'sr-only', text: m.sender === 'admin' ? 'You: ' : 'Visitor: ' }),
+          el('span', { text: m.body }),
+          el('time', { text: fmtDate(m.createdAt), datetime: m.createdAt })
+        ])
+      ]);
+    }));
+
+    var foot;
+    if (s.status === 'open') {
+      var ta = el('textarea', { id: 'reply-box', rows: '1', maxlength: '2000', placeholder: 'Type a reply', 'aria-label': 'Reply' });
+      ta.value = draft;
+      var sendB = el('button', { type: 'submit', class: 'btn', text: 'Send' });
+      var formEl = el('form', { class: 'thread-compose' }, [ta, sendB]);
+      var grow = function () { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 160) + 'px'; };
+      ta.addEventListener('input', grow);
+      ta.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); formEl.requestSubmit ? formEl.requestSubmit() : sendReply(ta, sendB); }
+      });
+      formEl.addEventListener('submit', function (e) { e.preventDefault(); sendReply(ta, sendB); });
+      foot = [formEl, el('p', { class: 'thread-hint', text: 'Enter to send, Shift + Enter for a new line.' })];
+      setTimeout(grow, 0);
+    } else {
+      foot = [el('div', { class: 'thread-note' }, [
+        el('span', { text: 'This chat has ended. The visitor can start a new chat from the website.' }),
+        el('button', { type: 'button', class: 'ghost-btn', text: 'Reopen chat', onclick: function () { setChatStatus('open'); } })
+      ])];
+    }
+
+    var meta = [
+      s.email ? el('a', { href: 'mailto:' + s.email, text: s.email }) : el('span', { text: 'No email given' }),
+      s.page ? el('span', { text: 'Started on the ' + (s.page === '/' || s.page === '/index.html' ? 'homepage' : /stores/.test(s.page) ? 'stores page' : s.page + ' page') }) : null,
+      el('span', { text: 'Started ' + fmtDate(s.createdAt, true) }),
+      s.rating ? el('span', { text: s.rating === 'up' ? 'Rated: good' : 'Rated: bad' }) : null
+    ];
+    box.replaceChildren.apply(box, [
+      el('div', { class: 'thread-head' }, [
+        el('div', {}, [
+          el('button', { type: 'button', class: 'ghost-btn back-btn', style: 'margin-bottom:10px', onclick: function () { chat.selected = null; renderThread(); renderChatList(); } }, [el('span', { html: ICON.back }), 'All chats']),
+          el('h2', { text: chatName(s) }),
+          el('div', { class: 'thread-meta' }, meta)
+        ]),
+        el('div', { class: 'thread-actions' }, [
+          s.email ? el('a', { class: 'ghost-btn', href: 'mailto:' + s.email + '?subject=' + encodeURIComponent('Following up on your chat with PrimeSphere'), text: 'Email visitor' }) : null,
+          s.status === 'open' ? el('button', { type: 'button', class: 'ghost-btn', text: 'End chat', onclick: function () { setChatStatus('closed'); } }) : null,
+          el('button', { type: 'button', class: 'ghost-btn ghost-btn--danger', text: 'Delete', onclick: deleteChat })
+        ])
+      ]),
+      logEl
+    ].concat(foot));
+
+    if (scrollToEnd || nearBottom) logEl.scrollTop = logEl.scrollHeight;
+    else if (oldLog) logEl.scrollTop = oldLog.scrollTop;
+    if (hadFocus || scrollToEnd) { var r = $('#reply-box'); if (r) { r.focus(); r.setSelectionRange(r.value.length, r.value.length); } }
+  }
+
+  var replying = false;
+  function sendReply(ta, btn) {
+    var text = ta.value.trim();
+    if (!text || replying) return;
+    replying = true; btn.disabled = true;
+    api('/api/admin/chat', { method: 'POST', json: { id: chat.selected, message: text } }).then(function (d) {
+      ta.value = '';
+      chat.messages.push(d.message);
+      renderThread(true);
+      loadChatList();
+    }).catch(function (err) { toast(err.message, true); if (err.status === 409) loadThread(true); })
+      .then(function () { replying = false; var b = $('.thread-compose .btn'); if (b) b.disabled = false; });
+  }
+
+  function setChatStatus(status) {
+    if (status === 'closed' && !confirm('End this chat? The visitor will see that the chat has ended.')) return;
+    api('/api/admin/chat', { method: 'PATCH', json: { id: chat.selected, status: status } }).then(function () {
+      toast(status === 'closed' ? 'Chat ended.' : 'Chat reopened.');
+      loadThread(true); loadChatList();
+    }).catch(function (err) { toast(err.message, true); });
+  }
+
+  function deleteChat() {
+    if (!confirm('Delete this chat and all its messages? This cannot be undone.')) return;
+    api('/api/admin/chat?id=' + encodeURIComponent(chat.selected), { method: 'DELETE' }).then(function () {
+      toast('Chat deleted.');
+      chat.selected = null; chat.session = null; renderThread(); loadChatList();
+    }).catch(function (err) { toast(err.message, true); });
+  }
+
+  $$('[data-chat-status]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      $$('[data-chat-status]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      chat.status = b.getAttribute('data-chat-status');
+      loadChatList();
+    });
   });
 
   /* ---------- Start ---------- */

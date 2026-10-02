@@ -37,6 +37,19 @@ lib/                                             shared server code (database, l
 
 The site comes with 9 placeholder stores the first time it connects to the database. Edit or delete them once your real stores are in.
 
+## Live chat
+
+The chat button sits on the bottom right of every public page. When a visitor sends a message it appears in
+**/admin > Live chat** with an unread count, a sound and a count in the browser tab title. Reply there; the visitor sees it
+within about 3 seconds. You can end, reopen or delete chats, and you can see the visitor's email (if they left it), the page they
+started on and their thumbs up/down rating.
+
+- Chats work by checking for new messages every few seconds (Vercel functions can't hold a live connection open).
+  Checks only run while a chat is open, and they slow down when the tab is in the background.
+- Visitors keep their chat across pages and reloads in the same browser.
+- Keep the admin open in a tab to get the sound alerts. The badge checks every 15 seconds on any admin tab.
+- To change the greeting, edit `GREETING` at the top of `chat.js`.
+
 ## Changing your password
 
 Change `ADMIN_PASSWORD` in Vercel and redeploy. Anyone signed in (including you) is signed out.
