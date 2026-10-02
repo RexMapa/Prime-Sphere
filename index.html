@@ -190,11 +190,7 @@
 </section>
 
 <!-- ============ SHOPIFY STORES ============ -->
-<!--
-  To add a store: put a full-page screenshot in assets/stores/ (JPG/PNG/WebP, 1440px wide works best),
-  then set the img src, data-full, data-title, data-url, the name, category and link below.
-  Copy one <article class="store"> block to add more.
--->
+<!-- Stores are managed in /admin. Up to 5 stores marked "Featured" show here; the cards below are a fallback if the API is unreachable. -->
 <section class="section section--line" id="stores">
   <div class="wrap">
     <div class="split-head">
@@ -204,7 +200,7 @@
       </div>
       <p class="reveal" style="--d:.16s">From theme builds to day-to-day store management, these brands trust us to run their Shopify storefronts. Click any store to see the full site.</p>
     </div>
-    <div class="stores">
+    <div class="stores" data-stores="featured">
       <article class="store reveal">
         <button type="button" class="store-shot" data-full="assets/stores/store-1.svg" data-pages='{"Homepage": "assets/stores/store-1.svg", "Collection": "assets/stores/store-1-collection.svg", "Product": "assets/stores/store-1-product.svg", "Cart": "assets/stores/store-1-cart.svg", "About": "assets/stores/store-1-about.svg"}' data-title="Store Name 1" data-url="https://example.com" aria-label="View full screenshot of Store Name 1">
           <img src="assets/stores/store-1.svg" alt="Store Name 1 homepage" loading="lazy" width="1440" height="4200">
@@ -433,12 +429,10 @@
       </ul>
     </div>
 
-    <!--
-      FORM SETUP: set data-endpoint to a form service URL (e.g. https://formspree.io/f/yourid).
-      With no endpoint, the form opens the visitor's email app addressed to data-email.
-    -->
-    <form class="form reveal" id="contact-form" novalidate data-endpoint="" data-email="hello@yourdomain.com">
+    <!-- Submissions are saved to your Neon database and shown in /admin. -->
+    <form class="form reveal" id="contact-form" novalidate data-endpoint="/api/contact" data-email="hello@yourdomain.com">
       <h3>Feel Free to Contact Us</h3>
+      <div class="hp" aria-hidden="true"><label>Leave this empty<input type="url" name="website" tabindex="-1" autocomplete="off"></label></div>
       <div class="form-row">
         <label class="field">First Name*<input name="firstName" type="text" autocomplete="given-name" placeholder="First name" required><span class="field-error"></span></label>
         <label class="field">Last Name*<input name="lastName" type="text" autocomplete="family-name" placeholder="Last name" required><span class="field-error"></span></label>

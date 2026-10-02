@@ -667,3 +667,9 @@ body.lightbox-open { overflow: hidden; }
 }
 .lightbox-tab:hover { border-color: var(--accent); color: var(--text); }
 .lightbox-tab[aria-selected="true"] { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; }
+
+/* Spam trap field, hidden from people */
+.hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.form { position: relative; }
+.stores-empty { text-align: center; margin: 40px auto 0; }
+.filter-bar[hidden] { display: none; }

@@ -60,11 +60,7 @@
   </div>
 </section>
 
-<!--
-  To add a store: copy one <article class="store"> block.
-  data-category must match one of the filter buttons' data-filter values.
-  Put full-page screenshots in assets/stores/ and update src, data-full, data-title, data-url and the links.
--->
+<!-- Stores are managed in /admin and loaded from the database. The cards below are a fallback if the API is unreachable. -->
 <section class="section stores-page" id="stores">
   <div class="wrap">
     <div class="filter-bar fade-in" style="--d:.6s">
@@ -78,7 +74,7 @@
       </div>
       <span class="store-count" aria-live="polite">9 stores</span>
     </div>
-    <div class="stores stores--all">
+    <div class="stores stores--all" data-stores="all">
       <article class="store reveal" data-category="fashion">
         <button type="button" class="store-shot" data-full="assets/stores/store-1.svg" data-pages='{"Homepage": "assets/stores/store-1.svg", "Collection": "assets/stores/store-1-collection.svg", "Product": "assets/stores/store-1-product.svg", "Cart": "assets/stores/store-1-cart.svg", "About": "assets/stores/store-1-about.svg"}' data-title="Store Name 1" data-url="https://example.com" aria-label="View full screenshot of Store Name 1">
           <img src="assets/stores/store-1.svg" alt="Store Name 1 homepage" loading="lazy" width="1440" height="4200">
@@ -170,6 +166,7 @@
         </div>
       </article>
     </div>
+    <p class="stores-empty lede" hidden>No stores to show yet. Check back soon.</p>
   </div>
 </section>
 

@@ -95,20 +95,22 @@
   }
 
   var revealEls = $$('.reveal, .reveal-img');
+  var revealObs = null;
   if ('IntersectionObserver' in window && !reduceMotion) {
-    var obs = new IntersectionObserver(function (entries) {
+    revealObs = new IntersectionObserver(function (entries) {
       entries.forEach(function (en) {
         if (!en.isIntersecting) return;
         en.target.classList.add('is-in');
         $$('[data-count]', en.target).forEach(countUp);
-        obs.unobserve(en.target);
+        revealObs.unobserve(en.target);
       });
     }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
-    revealEls.forEach(function (el) { obs.observe(el); });
+    revealEls.forEach(function (el) { revealObs.observe(el); });
   } else {
     revealEls.forEach(function (el) { el.classList.add('is-in'); });
     $$('[data-count]').forEach(function (el) { el.textContent = el.getAttribute('data-count'); });
   }
+  function reveal(el) { if (revealObs) revealObs.observe(el); else el.classList.add('is-in'); }
 
   /* ---------- Hero slider ---------- */
   var slides = $$('.slide');
@@ -198,38 +200,165 @@
     });
   }
 
-  /* ---------- Shopify stores: hover scroll + lightbox ---------- */
-  var shots = $$('.store-shot');
+  /* ---------- Shopify stores: loaded from the database ---------- */
+  var SVG_ZOOM = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M11 8v6M8 11h6"/></svg>';
+  var SVG_ARROW = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg>';
+  var slug = function (s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'other'; };
+  var safeUrl = function (u) { return /^(https?:\/\/|\/(?!\/))/i.test(u || '') ? u : '#'; };
+
+  // Builds one store card with DOM methods (no HTML strings from data, so names can't inject markup).
+  function storeCard(s, i) {
+    var pages = {};
+    (s.pages || []).forEach(function (p) { pages[p.label] = p.image; });
+    var first = (s.pages && s.pages[0]) ? s.pages[0].image : '';
+
+    var art = document.createElement('article');
+    art.className = 'store reveal';
+    art.setAttribute('data-category', slug(s.category));
+    if (i % 3) art.style.setProperty('--d', (i % 3) * 0.08 + 's');
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'store-shot';
+    btn.setAttribute('data-full', first);
+    btn.setAttribute('data-title', s.name);
+    btn.setAttribute('data-url', safeUrl(s.url));
+    btn.setAttribute('data-pages', JSON.stringify(pages));
+    btn.setAttribute('aria-label', 'View full screenshot of ' + s.name);
+    if (first) {
+      var img = document.createElement('img');
+      img.src = first; img.alt = s.name + ' homepage'; img.loading = 'lazy';
+      btn.appendChild(img);
+    }
+    var zoom = document.createElement('span');
+    zoom.className = 'store-zoom'; zoom.setAttribute('aria-hidden', 'true');
+    zoom.innerHTML = SVG_ZOOM; zoom.appendChild(document.createTextNode('View full site'));
+    btn.appendChild(zoom);
+
+    var info = document.createElement('div');
+    info.className = 'store-info';
+    var txt = document.createElement('div');
+    var h3 = document.createElement('h3'); h3.textContent = s.name;
+    var p = document.createElement('p'); p.textContent = s.category || '';
+    txt.appendChild(h3); txt.appendChild(p);
+    info.appendChild(txt);
+    if (s.url) {
+      var a = document.createElement('a');
+      a.href = safeUrl(s.url); a.target = '_blank'; a.rel = 'noopener'; a.className = 'round-link';
+      a.setAttribute('aria-label', 'Visit ' + s.name + ' (opens in a new tab)');
+      a.innerHTML = SVG_ARROW;
+      info.appendChild(a);
+    }
+    art.appendChild(btn); art.appendChild(info);
+    return art;
+  }
+
   // Hover scroll distance: move the screenshot so its bottom reaches the frame
   function setScrollDistance(btn) {
     var img = $('img', btn);
-    if (!img.naturalWidth) return;
+    if (!img || !img.naturalWidth) return;
     var frameH = btn.clientHeight - 26;
     var imgH = btn.clientWidth * (img.naturalHeight / img.naturalWidth);
-    var dist = Math.max(0, imgH - frameH);
-    btn.style.setProperty('--scroll', '-' + dist.toFixed(0) + 'px');
+    btn.style.setProperty('--scroll', '-' + Math.max(0, imgH - frameH).toFixed(0) + 'px');
   }
-  shots.forEach(function (btn) {
-    var img = $('img', btn);
-    if (img.complete) setScrollDistance(btn); else img.addEventListener('load', function () { setScrollDistance(btn); });
-  });
-  window.addEventListener('resize', function () { shots.forEach(setScrollDistance); });
+  function prepShots() {
+    $$('.store-shot').forEach(function (btn) {
+      var img = $('img', btn);
+      if (!img) return;
+      if (img.complete) setScrollDistance(btn); else img.addEventListener('load', function () { setScrollDistance(btn); }, { once: true });
+    });
+  }
+  window.addEventListener('resize', function () { $$('.store-shot').forEach(setScrollDistance); });
 
+  /* ---------- Filters (stores page), built from the store categories ---------- */
+  function buildFilters(stores) {
+    var bar = $('.filters');
+    if (!bar) return;
+    var seen = {};
+    var cats = [];
+    stores.forEach(function (s) {
+      var k = slug(s.category);
+      if (s.category && !seen[k]) { seen[k] = 1; cats.push({ key: k, label: s.category }); }
+    });
+    bar.innerHTML = '';
+    [{ key: 'all', label: 'All' }].concat(cats).forEach(function (c) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'filter';
+      b.setAttribute('data-filter', c.key);
+      b.setAttribute('aria-pressed', String(c.key === 'all'));
+      b.textContent = c.label;
+      bar.appendChild(b);
+    });
+    $('.filter-bar').hidden = stores.length === 0;
+  }
+  function setCount(n) {
+    var el = $('.store-count');
+    if (el) el.textContent = n + (n === 1 ? ' store' : ' stores');
+  }
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest && e.target.closest('[data-filter]');
+    if (!btn) return;
+    var f = btn.getAttribute('data-filter');
+    $$('[data-filter]').forEach(function (b) { b.setAttribute('aria-pressed', String(b === btn)); });
+    var n = 0;
+    $$('.store[data-category]').forEach(function (s) {
+      var show = f === 'all' || s.getAttribute('data-category') === f;
+      s.hidden = !show;
+      if (show) {
+        s.style.setProperty('--d', (n % 3) * 0.08 + 's');
+        n++;
+        s.classList.remove('is-in');
+        requestAnimationFrame(function () { requestAnimationFrame(function () { s.classList.add('is-in'); }); });
+      }
+    });
+    setCount(n);
+  });
+
+  // Load stores from /api/stores. If the API isn't reachable (e.g. opening the file locally),
+  // the cards already written in the HTML stay as a fallback.
+  var storeGrid = $('[data-stores]');
+  if (storeGrid) {
+    var mode = storeGrid.getAttribute('data-stores');
+    fetch('/api/stores' + (mode === 'featured' ? '?featured=1' : ''), { headers: { Accept: 'application/json' } })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (data) {
+        var stores = data.stores || [];
+        storeGrid.innerHTML = '';
+        stores.forEach(function (s, i) {
+          var card = storeCard(s, i);
+          storeGrid.appendChild(card);
+          reveal(card);
+        });
+        var empty = $('.stores-empty');
+        if (mode === 'featured') {
+          var section = storeGrid.closest('section');
+          if (section) section.hidden = stores.length === 0;
+        } else {
+          buildFilters(stores);
+          setCount(stores.length);
+          if (empty) empty.hidden = stores.length > 0;
+        }
+        prepShots();
+      })
+      .catch(function () { prepShots(); });
+  } else {
+    prepShots();
+  }
+
+  /* ---------- Lightbox with page tabs ---------- */
   var lb = $('#lightbox');
-  if (lb && shots.length) {
+  if (lb) {
     var lbImg = $('.lightbox-scroll img', lb);
     var lbScroll = $('.lightbox-scroll', lb);
     var lbTitle = $('#lightbox-title', lb);
     var lbVisit = $('.lightbox-visit', lb);
     var lbPanel = $('.lightbox-panel', lb);
-    var lbIndex = 0, lastFocus = null;
-
-    function visibleShots() {
-      return shots.filter(function (s) { var st = s.closest('.store'); return !st || !st.hidden; });
-    }
     var lbTabs = $('.lightbox-tabs', lb);
-    var currentPage = 'Homepage';
+    var lbIndex = 0, lastFocus = null, currentPage = 'Homepage';
 
+    var visibleShots = function () {
+      return $$('.store-shot').filter(function (s) { var st = s.closest('.store'); return !st || !st.hidden; });
+    };
     function pagesFor(b) {
       var pages = null;
       try { pages = JSON.parse(b.getAttribute('data-pages') || 'null'); } catch (e) { pages = null; }
@@ -256,26 +385,24 @@
       lbTabs.hidden = names.length < 2;
       names.forEach(function (name) {
         var t = document.createElement('button');
-        t.type = 'button';
-        t.className = 'lightbox-tab';
-        t.setAttribute('role', 'tab');
-        t.setAttribute('data-page', name);
+        t.type = 'button'; t.className = 'lightbox-tab';
+        t.setAttribute('role', 'tab'); t.setAttribute('data-page', name);
         t.textContent = name;
         t.addEventListener('click', function () { showPage(name, pages, title); });
         lbTabs.appendChild(t);
       });
-      // left/right arrows move between tabs when a tab has focus
-      lbTabs.onkeydown = function (e) {
-        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-        e.stopPropagation(); e.preventDefault();
-        var all = $$('[role="tab"]', lbTabs);
-        var idx = all.indexOf(document.activeElement);
-        var next = all[(idx + (e.key === 'ArrowRight' ? 1 : -1) + all.length) % all.length];
-        next.focus(); next.click();
-      };
     }
+    lbTabs.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      e.preventDefault();
+      var all = $$('[role="tab"]', lbTabs);
+      var idx = all.indexOf(document.activeElement);
+      var next = all[(idx + (e.key === 'ArrowRight' ? 1 : -1) + all.length) % all.length];
+      next.focus(); next.click();
+    });
     function load(i) {
       var list = visibleShots();
+      if (!list.length) return;
       lbIndex = (i + list.length) % list.length;
       var b = list[lbIndex];
       var title = b.getAttribute('data-title');
@@ -288,16 +415,13 @@
     }
     function open(btn) {
       lastFocus = document.activeElement;
-      var i = visibleShots().indexOf(btn);
       currentPage = 'Homepage';
-      // Zoom from the clicked card
       var r = btn.getBoundingClientRect();
-      lbPanel.style.setProperty('--ox', (r.left + r.width / 2) + 'px');
-      lbPanel.style.setProperty('--oy', (r.top + r.height / 2) + 'px');
-      load(i);
+      load(visibleShots().indexOf(btn));
       lb.hidden = false;
       document.body.classList.add('lightbox-open');
       requestAnimationFrame(function () {
+        // Zoom out of the clicked card
         var pr = lbPanel.getBoundingClientRect();
         lbPanel.style.setProperty('--ox', (r.left + r.width / 2 - pr.left) + 'px');
         lbPanel.style.setProperty('--oy', (r.top + r.height / 2 - pr.top) + 'px');
@@ -311,7 +435,10 @@
       setTimeout(function () { lb.hidden = true; }, reduceMotion ? 0 : 400);
       if (lastFocus) lastFocus.focus();
     }
-    shots.forEach(function (b) { b.addEventListener('click', function () { open(b); }); });
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('.store-shot');
+      if (b) open(b);
+    });
     $$('[data-close]', lb).forEach(function (el) { el.addEventListener('click', close); });
     $$('[data-nav]', lb).forEach(function (el) {
       el.addEventListener('click', function () { load(lbIndex + parseInt(el.getAttribute('data-nav'), 10)); });
@@ -323,37 +450,11 @@
       else if (e.key === 'ArrowRight') load(lbIndex + 1);
       else if (e.key === 'ArrowLeft') load(lbIndex - 1);
       else if (e.key === 'Tab') {
-        // keep focus inside the lightbox
         var f = $$('a[href], button, [tabindex="0"]', lb).filter(function (el) { return el.offsetParent !== null; });
         var first = f[0], last = f[f.length - 1];
         if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
         else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
       }
-    });
-  }
-
-  /* ---------- Store filters (stores page) ---------- */
-  var filterBtns = $$('[data-filter]');
-  if (filterBtns.length) {
-    var allStores = $$('.store[data-category]');
-    var countEl = $('.store-count');
-    filterBtns.forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var f = btn.getAttribute('data-filter');
-        filterBtns.forEach(function (b) { b.setAttribute('aria-pressed', String(b === btn)); });
-        var n = 0;
-        allStores.forEach(function (s, i) {
-          var show = f === 'all' || s.getAttribute('data-category') === f;
-          s.hidden = !show;
-          if (show) {
-            n++;
-            s.classList.remove('is-in');
-            s.style.setProperty('--d', ((n - 1) % 3) * 0.08 + 's');
-            requestAnimationFrame(function () { requestAnimationFrame(function () { s.classList.add('is-in'); }); });
-          }
-        });
-        if (countEl) countEl.textContent = n + (n === 1 ? ' store' : ' stores');
-      });
     });
   }
 
@@ -422,16 +523,23 @@
 
       var data = new FormData(form);
       var endpoint = form.getAttribute('data-endpoint');
+      var payload = {
+        firstName: data.get('firstName'), lastName: data.get('lastName'),
+        company: data.get('company'), helpWith: data.get('helpWith'),
+        discuss: data.getAll('discuss'), budget: data.get('budget'),
+        email: data.get('email'), phone: data.get('phone'),
+        website: data.get('website') // hidden spam trap
+      };
 
       if (!endpoint) {
         var to = form.getAttribute('data-email');
-        var body = 'Name: ' + data.get('firstName') + ' ' + data.get('lastName') +
-          '\nFrom: ' + (data.get('company') || '-') +
-          '\nI need help with: ' + (data.get('helpWith') || '-') +
-          '\nI\'d like to discuss: ' + data.getAll('discuss').join(', ') +
-          '\nMonthly budget: ' + data.get('budget') +
-          '\nReply to: ' + data.get('email') +
-          '\nCall me on: ' + data.get('phone');
+        var body = 'Name: ' + payload.firstName + ' ' + payload.lastName +
+          '\nFrom: ' + (payload.company || '-') +
+          '\nI need help with: ' + (payload.helpWith || '-') +
+          '\nI\'d like to discuss: ' + payload.discuss.join(', ') +
+          '\nMonthly budget: ' + payload.budget +
+          '\nReply to: ' + payload.email +
+          '\nCall me on: ' + payload.phone;
         window.location.href = 'mailto:' + to + '?subject=' + encodeURIComponent('New project enquiry') + '&body=' + encodeURIComponent(body);
         status.classList.add('is-ok');
         status.textContent = 'Your email app is opening with the message ready to send.';
@@ -440,16 +548,20 @@
 
       submitBtn.classList.add('is-loading');
       submitBtn.firstChild.textContent = 'Sending ';
-      fetch(endpoint, { method: 'POST', body: data, headers: { Accept: 'application/json' } })
+      fetch(endpoint, { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json', Accept: 'application/json' } })
         .then(function (r) {
-          if (!r.ok) throw new Error();
+          return r.json().catch(function () { return {}; }).then(function (res) {
+            if (!r.ok) throw new Error(res.error || 'Message not sent. Check your connection and try again.');
+          });
+        })
+        .then(function () {
           form.reset();
           status.classList.add('is-ok');
           status.textContent = 'Message sent. We will reply within one business day.';
         })
-        .catch(function () {
+        .catch(function (err) {
           status.classList.add('is-err');
-          status.textContent = 'Message not sent. Check your connection and try again.';
+          status.textContent = err && err.message && err.message !== 'Failed to fetch' ? err.message : 'Message not sent. Check your connection and try again.';
         })
         .then(function () {
           submitBtn.classList.remove('is-loading');
