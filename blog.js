@@ -25,7 +25,7 @@
     article.hidden = false;
     article.appendChild(node('p', 'lede', 'Loading post'));
     $('#back-label').textContent = 'All posts';
-    $('.back-link').href = 'blog.html';
+    $('.back-link').href = '/blog';
     fetch('/api/content?post=' + id, { headers: { Accept: 'application/json' } })
       .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error || 'Post not found.'); return d.post; }); })
       .then(function (p) {
@@ -66,7 +66,7 @@
       grid.replaceChildren();
       posts.forEach(function (p) {
         var card = node('a', 'blog-card');
-        card.href = 'blog.html?post=' + p.id;
+        card.href = '/blog?post=' + p.id;
         var m = node('div', 'blog-card-media'); m.appendChild(image(p.image, 'Article image'));
         var b = node('div', 'blog-card-body');
         if (p.date) b.appendChild(node('span', 'blog-date', fmtDate(p.date)));

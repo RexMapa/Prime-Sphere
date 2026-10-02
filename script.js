@@ -66,7 +66,11 @@
 
   /* ---------- Active nav link on scroll ---------- */
   var navAnchors = $$('.nav-links a');
-  var sections = navAnchors.map(function (a) { return $(a.getAttribute('href')); }).filter(Boolean);
+  // Only same-page links (#section) are highlighted on scroll
+  var sections = navAnchors.map(function (a) {
+    var h = a.getAttribute('href') || '';
+    return /^#[\w-]+$/.test(h) ? document.getElementById(h.slice(1)) : null;
+  }).filter(Boolean);
   if ('IntersectionObserver' in window) {
     var navObs = new IntersectionObserver(function (entries) {
       entries.forEach(function (en) {
@@ -418,7 +422,7 @@
       var ul = node('ul');
       (s.items || []).forEach(function (x) { ul.appendChild(node('li', null, x)); });
       art.appendChild(ul);
-      art.appendChild(textLink(s.url || 'contact.html', 'Explore More'));
+      art.appendChild(textLink(s.url || '/contact', 'Explore More'));
       box.appendChild(art);
       reveal(art);
     });
@@ -452,7 +456,7 @@
     });
     if (window.__setMarqueeItems) window.__setMarqueeItems(els);
   }
-  function postHref(p) { return 'blog.html?post=' + p.id; }
+  function postHref(p) { return '/blog?post=' + p.id; }
   function fmtPostDate(d) {
     if (!d) return '';
     var parts = d.split('-').map(Number);
