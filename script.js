@@ -227,22 +227,69 @@
     function visibleShots() {
       return shots.filter(function (s) { var st = s.closest('.store'); return !st || !st.hidden; });
     }
+    var lbTabs = $('.lightbox-tabs', lb);
+    var currentPage = 'Homepage';
+
+    function pagesFor(b) {
+      var pages = null;
+      try { pages = JSON.parse(b.getAttribute('data-pages') || 'null'); } catch (e) { pages = null; }
+      if (!pages || !Object.keys(pages).length) pages = { Homepage: b.getAttribute('data-full') };
+      return pages;
+    }
+    function showPage(name, pages, title) {
+      currentPage = name;
+      lbImg.classList.remove('is-ready');
+      lbImg.onload = function () { lbImg.classList.add('is-ready'); };
+      lbImg.src = pages[name];
+      lbImg.alt = name + ' screenshot of ' + title;
+      if (lbImg.complete && lbImg.naturalWidth) lbImg.classList.add('is-ready');
+      lbScroll.scrollTop = 0;
+      $$('[role="tab"]', lbTabs).forEach(function (t) {
+        var on = t.getAttribute('data-page') === name;
+        t.setAttribute('aria-selected', String(on));
+        t.tabIndex = on ? 0 : -1;
+      });
+    }
+    function buildTabs(pages, title) {
+      lbTabs.innerHTML = '';
+      var names = Object.keys(pages);
+      lbTabs.hidden = names.length < 2;
+      names.forEach(function (name) {
+        var t = document.createElement('button');
+        t.type = 'button';
+        t.className = 'lightbox-tab';
+        t.setAttribute('role', 'tab');
+        t.setAttribute('data-page', name);
+        t.textContent = name;
+        t.addEventListener('click', function () { showPage(name, pages, title); });
+        lbTabs.appendChild(t);
+      });
+      // left/right arrows move between tabs when a tab has focus
+      lbTabs.onkeydown = function (e) {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        e.stopPropagation(); e.preventDefault();
+        var all = $$('[role="tab"]', lbTabs);
+        var idx = all.indexOf(document.activeElement);
+        var next = all[(idx + (e.key === 'ArrowRight' ? 1 : -1) + all.length) % all.length];
+        next.focus(); next.click();
+      };
+    }
     function load(i) {
       var list = visibleShots();
       lbIndex = (i + list.length) % list.length;
       var b = list[lbIndex];
-      lbImg.classList.remove('is-ready');
-      lbImg.onload = function () { lbImg.classList.add('is-ready'); };
-      lbImg.src = b.getAttribute('data-full');
-      lbImg.alt = 'Full page screenshot of ' + b.getAttribute('data-title');
-      if (lbImg.complete) lbImg.classList.add('is-ready');
-      lbTitle.textContent = b.getAttribute('data-title');
+      var title = b.getAttribute('data-title');
+      var pages = pagesFor(b);
+      buildTabs(pages, title);
+      // keep the same page type when switching stores, if that store has it
+      showPage(pages[currentPage] ? currentPage : Object.keys(pages)[0], pages, title);
+      lbTitle.textContent = title;
       lbVisit.href = b.getAttribute('data-url') || '#';
-      lbScroll.scrollTop = 0;
     }
     function open(btn) {
       lastFocus = document.activeElement;
       var i = visibleShots().indexOf(btn);
+      currentPage = 'Homepage';
       // Zoom from the clicked card
       var r = btn.getBoundingClientRect();
       lbPanel.style.setProperty('--ox', (r.left + r.width / 2) + 'px');
@@ -271,6 +318,7 @@
     });
     document.addEventListener('keydown', function (e) {
       if (lb.hidden) return;
+      if (e.target.closest && e.target.closest('.lightbox-tabs') && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) return;
       if (e.key === 'Escape') close();
       else if (e.key === 'ArrowRight') load(lbIndex + 1);
       else if (e.key === 'ArrowLeft') load(lbIndex - 1);

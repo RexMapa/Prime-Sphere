@@ -652,3 +652,18 @@ body.lightbox-open { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .page-hero h1 .line > span { transform: none; }
 }
+
+/* ---------- Lightbox page tabs ---------- */
+.lightbox-tabs {
+  display: flex; gap: 6px; padding: 10px 14px; flex: none; overflow-x: auto; scrollbar-width: none;
+  border-bottom: 1px solid var(--line); background: var(--surface);
+}
+.lightbox-tabs::-webkit-scrollbar { display: none; }
+.lightbox-tabs[hidden] { display: none; }
+.lightbox-tab {
+  flex: none; min-height: 40px; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line-2);
+  background: transparent; color: var(--text-2); font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: background 0.25s, border-color 0.25s, color 0.25s;
+}
+.lightbox-tab:hover { border-color: var(--accent); color: var(--text); }
+.lightbox-tab[aria-selected="true"] { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; }
