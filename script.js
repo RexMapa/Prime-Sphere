@@ -155,6 +155,49 @@
   });
   qAuto();
 
+  /* ---------- Infinite client logo marquee ---------- */
+  var track = $('.marquee-track');
+  if (track) {
+    // Original logos = the slots that are not aria-hidden copies
+    var originals = $$('.logo-slot', track).filter(function (el) { return el.getAttribute('aria-hidden') !== 'true'; })
+      .map(function (el) { return el.cloneNode(true); });
+    var SPEED = 60; // pixels per second
+
+    function buildMarquee() {
+      track.innerHTML = '';
+      // 1. Fill one group until it is at least as wide as the screen
+      var group = document.createDocumentFragment();
+      var groupEls = [];
+      var width = 0;
+      var target = Math.max(window.innerWidth, 800);
+      while (width < target || groupEls.length < originals.length) {
+        originals.forEach(function (o) {
+          var c = o.cloneNode(true);
+          if (groupEls.length >= originals.length) c.setAttribute('aria-hidden', 'true');
+          groupEls.push(c);
+          track.appendChild(c);
+        });
+        width = track.scrollWidth;
+        if (groupEls.length > 200) break;
+      }
+      // 2. Duplicate the whole group once; animating -50% then loops seamlessly
+      groupEls.forEach(function (el) {
+        var c = el.cloneNode(true);
+        c.setAttribute('aria-hidden', 'true');
+        track.appendChild(c);
+      });
+      track.style.setProperty('--marquee-dur', (width / SPEED).toFixed(2) + 's');
+    }
+    buildMarquee();
+    var mqTimer = null, lastW = window.innerWidth;
+    window.addEventListener('resize', function () {
+      if (window.innerWidth === lastW) return;
+      lastW = window.innerWidth;
+      clearTimeout(mqTimer);
+      mqTimer = setTimeout(buildMarquee, 200);
+    });
+  }
+
   /* ---------- Subtle parallax on ghost words ---------- */
   if (!reduceMotion && window.matchMedia('(min-width: 861px)').matches) {
     var ghosts = $$('.about .ghost-word, .work-head .ghost-word');
