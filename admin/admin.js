@@ -557,6 +557,15 @@
   function bkDate(m, opts) {
     return new Date(m.startsAt).toLocaleString(undefined, Object.assign({ timeZone: m.timezone || undefined }, opts));
   }
+  function zoneLabel(tz) {
+    if (!tz) return '';
+    var off = '';
+    try { off = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'shortOffset' }).formatToParts(new Date()).find(function (p) { return p.type === 'timeZoneName'; }).value; } catch (e) {}
+    return tz.split('/').pop().replace(/_/g, ' ') + (off ? ' (' + off + ')' : '');
+  }
+  function clientTime(m, opts) {
+    return new Date(m.startsAt).toLocaleString(undefined, Object.assign({ timeZone: m.visitorTz || m.timezone || undefined }, opts));
+  }
   function bkStatusLabel(s) { return { new: 'New', confirmed: 'Confirmed', completed: 'Completed', cancelled: 'Cancelled' }[s] || s; }
 
   function loadBookings() {
@@ -588,7 +597,7 @@
           el('span', { class: 'dot' + (m.status === 'new' ? '' : ' dot--off') }),
           el('span', { class: 'msg-name', text: m.firstName + ' ' + m.lastName + (m.company ? ', ' + m.company : '') }),
           el('span', { class: 'msg-date', text: bkDate(m, { hour: 'numeric', minute: '2-digit' }) }),
-          el('span', { class: 'msg-sub', text: bkStatusLabel(m.status) + ' · ' + m.discuss.join(', ') })
+          el('span', { class: 'msg-sub', text: bkStatusLabel(m.status) + (m.visitorTz && m.visitorTz !== m.timezone ? ' · Client: ' + clientTime(m, { weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' ' + m.visitorTz.split('/').pop().replace(/_/g, ' ') : '') + ' · ' + m.discuss.join(', ') })
         ]));
       });
       list.replaceChildren.apply(list, nodes);
@@ -612,9 +621,18 @@
       return;
     }
     var start = new Date(m.startsAt);
-    var visitorTime = m.visitorTz && m.visitorTz !== m.timezone
-      ? 'Their time: ' + start.toLocaleString(undefined, { timeZone: m.visitorTz, weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' (' + m.visitorTz.replace(/_/g, ' ') + ')'
-      : '';
+    var longFmt = { weekday: 'long', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' };
+    var endAt = new Date(start.getTime() + (m.duration || 30) * 60000);
+    var range = function (tz) {
+      return start.toLocaleString(undefined, Object.assign({ timeZone: tz }, longFmt)) + ' to ' + endAt.toLocaleTimeString(undefined, { timeZone: tz, hour: 'numeric', minute: '2-digit' });
+    };
+    var zoneRow = function (who, tz) {
+      return el('div', { class: 'tz-row' }, [
+        el('span', { class: 'tz-who', text: who }),
+        el('strong', { text: range(tz) }),
+        el('small', { text: zoneLabel(tz) })
+      ]);
+    };
     var cell = function (label, value, wide) { return el('div', { class: 'detail-cell' + (wide ? ' detail-cell--wide' : '') }, [el('dt', { text: label }), el('dd', {}, [value])]); };
     var txt = function (v) { return document.createTextNode(v || '-'); };
     var act = function (label, status, cls) { return el('button', { type: 'button', class: cls || 'ghost-btn', text: label, onclick: function () { setBookingStatus(m, status); } }); };
@@ -635,9 +653,10 @@
         ]),
         el('div', { class: 'bk-when' }, [
           el('div', { class: 'bk-date-box' }, [el('span', { text: bkDate(m, { month: 'short' }) }), el('b', { text: bkDate(m, { day: 'numeric' }) })]),
-          el('div', {}, [
-            el('strong', { text: bkDate(m, { weekday: 'long', hour: 'numeric', minute: '2-digit' }) + ' (' + (m.duration || 30) + ' min)' }),
-            el('small', { text: [(m.timezone || '').replace(/_/g, ' '), visitorTime].filter(Boolean).join(' · ') })
+          el('div', { class: 'tz-rows' }, [
+            zoneRow('Your time', m.timezone),
+            zoneRow('Client time', m.visitorTz || m.timezone),
+            el('small', { class: 'tz-len', text: (m.duration || 30) + ' minute call' + ((m.visitorTz || m.timezone) === m.timezone ? ' · client is in the same time zone' : '') })
           ])
         ]),
         el('div', { class: 'detail-actions' }, actions)

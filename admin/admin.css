@@ -279,8 +279,14 @@ p { margin: 0; }
 .bk-date-box { width: 56px; flex: none; border-radius: 8px; background: var(--accent-fill); color: #fff; text-align: center; padding: 6px 0; font-family: var(--display); }
 .bk-date-box b { display: block; font-size: 22px; line-height: 1.1; }
 .bk-date-box span { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
-.bk-when strong { display: block; font-size: 16px; }
-.bk-when small { color: var(--muted); font-size: 13px; }
+.bk-when { align-items: flex-start; }
+.tz-rows { display: flex; flex-direction: column; gap: 10px; min-width: 0; flex: 1; }
+.tz-row { display: grid; grid-template-columns: 96px minmax(0, 1fr); column-gap: 12px; row-gap: 0; align-items: baseline; }
+.tz-who { grid-row: span 2; font-size: 12px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.04em; }
+.tz-row strong { font-size: 15px; }
+.tz-row small { color: var(--muted); font-size: 12.5px; }
+.tz-len { color: var(--muted); font-size: 12.5px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.08); }
+@media (max-width: 640px) { .tz-row { grid-template-columns: 1fr; } .tz-who { grid-row: auto; } }
 .status-pill[data-s="confirmed"] { border-color: var(--ok); color: var(--ok); }
 .status-pill[data-s="cancelled"] { border-color: var(--danger); color: var(--danger); }
 .status-pill[data-s="completed"] { color: var(--muted); }

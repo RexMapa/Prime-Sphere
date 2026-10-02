@@ -33,7 +33,8 @@
   fromHash();
 
   /* ---------- Time zone helpers ---------- */
-  var visitorTz = (Intl.DateTimeFormat().resolvedOptions().timeZone) || 'UTC';
+  var detectedTz = (Intl.DateTimeFormat().resolvedOptions().timeZone) || 'UTC';
+  var visitorTz = detectedTz;
   function tzOffset(ms, tz) {
     var parts = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(new Date(ms));
     var g = function (t) { return Number(parts.find(function (p) { return p.type === t; }).value); };
@@ -60,10 +61,52 @@
     return date.toLocaleString(undefined, { timeZone: tz, weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit' });
   }
   function tzName(tz) { return tz.replace(/_/g, ' ').split('/').pop(); }
+  function tzOffsetLabel(tz) {
+    try {
+      var part = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'shortOffset' }).formatToParts(new Date()).find(function (p) { return p.type === 'timeZoneName'; });
+      return part ? part.value.replace('GMT', 'GMT') : '';
+    } catch (e) { return ''; }
+  }
+  function tzMinutes(tz) { return Math.round(tzOffset(Date.now(), tz) / 60000); }
+
+  /* ---------- Time zone picker ---------- */
+  var FALLBACK_ZONES = ['Pacific/Honolulu', 'America/Anchorage', 'America/Los_Angeles', 'America/Denver', 'America/Chicago', 'America/New_York', 'America/Toronto', 'America/Sao_Paulo', 'Europe/London', 'Europe/Dublin', 'Europe/Paris', 'Europe/Berlin', 'Europe/Madrid', 'Europe/Rome', 'Europe/Athens', 'Africa/Johannesburg', 'Asia/Dubai', 'Asia/Karachi', 'Asia/Kolkata', 'Asia/Bangkok', 'Asia/Jakarta', 'Asia/Singapore', 'Asia/Manila', 'Asia/Shanghai', 'Asia/Hong_Kong', 'Asia/Taipei', 'Asia/Seoul', 'Asia/Tokyo', 'Australia/Perth', 'Australia/Brisbane', 'Australia/Adelaide', 'Australia/Sydney', 'Australia/Melbourne', 'Pacific/Auckland', 'UTC'];
+  var tzSelect = $('#tz-select');
+  (function fillZones() {
+    var zones = [];
+    try { zones = Intl.supportedValuesOf('timeZone'); } catch (e) { zones = FALLBACK_ZONES.slice(); }
+    if (zones.indexOf(detectedTz) === -1) zones.push(detectedTz);
+    if (zones.indexOf('UTC') === -1) zones.push('UTC');
+    var items = zones.map(function (z) {
+      var label;
+      try { label = tzName(z) + (z.indexOf('/') > -1 ? ', ' + z.split('/')[0].replace(/_/g, ' ') : ''); } catch (e) { label = z; }
+      return { z: z, mins: tzMinutes(z), label: label };
+    }).sort(function (a, b) { return a.mins - b.mins || a.label.localeCompare(b.label); });
+    tzSelect.replaceChildren.apply(tzSelect, items.map(function (it) {
+      var o = document.createElement('option');
+      o.value = it.z;
+      o.textContent = '(' + tzOffsetLabel(it.z) + ') ' + it.label + (it.z === detectedTz ? '  (detected)' : '');
+      if (it.z === detectedTz) o.selected = true;
+      return o;
+    }));
+  })();
+  tzSelect.addEventListener('change', function () {
+    visitorTz = tzSelect.value;
+    if (!cfg) return;
+    var keep = picked.slot ? picked.slot.at.getTime() : null;
+    buildDays();
+    picked = { date: null, slot: null, at: null };
+    // keep the same moment selected if it is still available
+    if (keep) Object.keys(days).some(function (d) {
+      return days[d].some(function (sl) { if (sl.at.getTime() === keep) { picked = { date: d, slot: sl, at: sl.at }; return true; } });
+    });
+    if (picked.date) monthIndex = Math.max(0, months.indexOf(picked.date.slice(0, 7)));
+    renderCalendar(); renderSlots();
+  });
 
   /* ---------- Availability ---------- */
   var cfg = null, taken = {}, days = {}, months = [], monthIndex = 0;
-  var picked = { date: null, time: null, at: null };
+  var picked = { date: null, slot: null, at: null };  // date = visitor's calendar day
   var loading = false, loaded = false;
 
   function loadAvailability(force) {
@@ -81,7 +124,7 @@
         $('#booking-form').hidden = false;
         buildDays();
         renderCalendar();
-        if (picked.date && !(days[picked.date] || []).some(function (s) { return s.time === picked.time; })) { picked = { date: null, time: null, at: null }; }
+        if (picked.at && !(days[picked.date] || []).some(function (sl) { return sl.at.getTime() === picked.at.getTime(); })) { picked = { date: null, slot: null, at: null }; }
         renderSlots();
       })
       .catch(function () {
@@ -90,7 +133,7 @@
       .then(function () { loading = false; });
   }
 
-  // days[YYYY-MM-DD] = [{ time, at: Date }] for bookable slots (in our time zone's calendar)
+  // days[visitor YYYY-MM-DD] = [{ date, time, at }] where date/time are in OUR time zone (what the server expects)
   function buildDays() {
     days = {};
     var now = Date.now();
@@ -100,23 +143,27 @@
     for (var i = 0; i <= cfg.daysAhead; i++) {
       var ymd = addDays(today, i);
       if (cfg.days.indexOf(weekday(ymd)) === -1) continue;
-      var list = cfg.slots.map(function (t) { return { time: t, at: zonedToUtc(ymd, t, cfg.timezone) }; })
-        .filter(function (s) { var ms = s.at.getTime(); return ms >= earliest && ms <= latest && !taken[ms]; });
-      if (list.length) days[ymd] = list;
+      cfg.slots.forEach(function (t) {
+        var at = zonedToUtc(ymd, t, cfg.timezone), ms = at.getTime();
+        if (ms < earliest || ms > latest || taken[ms]) return;
+        var local = ymdIn(ms, visitorTz);
+        (days[local] = days[local] || []).push({ date: ymd, time: t, at: at });
+      });
     }
-    var first = today.slice(0, 7), last = addDays(today, cfg.daysAhead).slice(0, 7);
+    Object.keys(days).forEach(function (k) { days[k].sort(function (a, b) { return a.at - b.at; }); });
+    var keys = Object.keys(days).sort();
+    var first = (keys[0] || ymdIn(now, visitorTz)).slice(0, 7);
+    var last = (keys[keys.length - 1] || first).slice(0, 7);
     months = [first];
     while (months[months.length - 1] < last) {
       var m = months[months.length - 1].split('-').map(Number);
-      var nx = new Date(Date.UTC(m[0], m[1], 1)).toISOString().slice(0, 7);
-      months.push(nx);
+      months.push(new Date(Date.UTC(m[0], m[1], 1)).toISOString().slice(0, 7));
     }
-    // start on the first month that has an open day
-    var firstOpen = Object.keys(days).sort()[0];
-    monthIndex = firstOpen ? Math.max(0, months.indexOf(firstOpen.slice(0, 7))) : 0;
-    $('#tz-note').textContent = visitorTz === cfg.timezone
-      ? 'Times are shown in your time zone (' + tzName(visitorTz) + '). Calls last ' + cfg.duration + ' minutes.'
-      : 'Times are shown in your time zone (' + tzName(visitorTz) + '). Our team is in ' + tzName(cfg.timezone) + '. Calls last ' + cfg.duration + ' minutes.';
+    monthIndex = 0;
+    var same = tzMinutes(visitorTz) === tzMinutes(cfg.timezone);
+    $('#tz-note').textContent = same
+      ? 'Times are shown in ' + tzName(visitorTz) + ' time, the same as our team in ' + tzName(cfg.timezone) + '. Calls last ' + cfg.duration + ' minutes.'
+      : 'Times are shown in ' + tzName(visitorTz) + ' time, with ' + tzName(cfg.timezone) + ' time (our team) underneath. Calls last ' + cfg.duration + ' minutes.';
   }
 
   function renderCalendar() {
@@ -159,7 +206,7 @@
   });
 
   function pickDate(ymd) {
-    picked.date = ymd; picked.time = null; picked.at = null;
+    picked.date = ymd; picked.slot = null; picked.at = null;
     $('#slot-error').textContent = '';
     renderCalendar(); renderSlots();
     var first = $('#slot-list button');
@@ -172,23 +219,22 @@
     if (!picked.date) { $('#slots-title').textContent = Object.keys(days).length ? 'Choose a date first' : 'No times available right now'; updateSummary(); return; }
     var p = picked.date.split('-').map(Number);
     $('#slots-title').textContent = new Date(Date.UTC(p[0], p[1] - 1, p[2])).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
-    (days[picked.date] || []).forEach(function (s) {
+    var showOurs = tzMinutes(visitorTz) !== tzMinutes(cfg.timezone);
+    (days[picked.date] || []).forEach(function (sl) {
+      var on = picked.at && picked.at.getTime() === sl.at.getTime();
       var b = document.createElement('button');
       b.type = 'button';
-      b.className = 'slot' + (picked.time === s.time ? ' is-picked' : '');
-      b.setAttribute('aria-pressed', String(picked.time === s.time));
-      var local = fmtTime(s.at, visitorTz);
-      // Show the visitor's day too if the time falls on a different calendar day for them
-      var localDay = ymdIn(s.at.getTime(), visitorTz);
-      if (localDay !== picked.date) local += ' (' + s.at.toLocaleDateString(undefined, { timeZone: visitorTz, weekday: 'short' }) + ')';
-      b.appendChild(document.createTextNode(local));
-      if (visitorTz !== cfg.timezone) {
+      b.className = 'slot' + (on ? ' is-picked' : '');
+      b.setAttribute('aria-pressed', String(!!on));
+      b.appendChild(document.createTextNode(fmtTime(sl.at, visitorTz)));
+      if (showOurs) {
         var sm = document.createElement('small');
-        sm.textContent = fmtTime(s.at, cfg.timezone) + ' ' + tzName(cfg.timezone);
+        var ourDay = sl.date !== picked.date ? sl.at.toLocaleDateString(undefined, { timeZone: cfg.timezone, weekday: 'short' }) + ' ' : '';
+        sm.textContent = ourDay + fmtTime(sl.at, cfg.timezone) + ' ' + tzName(cfg.timezone);
         b.appendChild(sm);
       }
       b.addEventListener('click', function () {
-        picked.time = s.time; picked.at = s.at;
+        picked.slot = sl; picked.at = sl.at;
         $('#slot-error').textContent = '';
         renderSlots();
       });
@@ -199,7 +245,7 @@
 
   function updateSummary() {
     $('#booking-summary').textContent = picked.at
-      ? 'Your call: ' + fmtLong(picked.at, visitorTz) + ' (' + cfg.duration + ' min)'
+      ? 'Your call: ' + fmtLong(picked.at, visitorTz) + ' ' + tzName(visitorTz) + ' time (' + cfg.duration + ' min)'
       : 'No time selected yet.';
   }
 
@@ -255,23 +301,23 @@
       kind: 'booking',
       firstName: fd.get('firstName'), lastName: fd.get('lastName'), email: fd.get('email'), phone: fd.get('phone'),
       company: fd.get('company'), discuss: fd.getAll('discuss'), helpWith: fd.get('helpWith'),
-      date: picked.date, time: picked.time, visitorTz: visitorTz, website: fd.get('website')
+      date: picked.slot ? picked.slot.date : '', time: picked.slot ? picked.slot.time : '', visitorTz: visitorTz, website: fd.get('website')
     };
     submitBtn.disabled = true; submitBtn.firstChild.textContent = 'Booking ';
     fetch('/api/contact', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(payload) })
       .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { if (!r.ok) { var er = new Error(d.error || 'Booking failed. Try again.'); er.status = r.status; throw er; } return d; }); })
       .then(function (d) {
         var at = new Date(d.startsAt || picked.at);
-        $('#done-when').textContent = fmtLong(at, visitorTz) + ' (' + (d.duration || cfg.duration) + ' minutes, your time)';
+        $('#done-when').textContent = fmtLong(at, visitorTz) + ' ' + tzName(visitorTz) + ' time (' + (d.duration || cfg.duration) + ' minutes)';
         $('#done-gcal').href = gcalLink(at, d.duration || cfg.duration);
         form.hidden = true;
         var done = $('#booking-done'); done.hidden = false; done.focus();
-        form.reset(); picked = { date: null, time: null, at: null };
+        form.reset(); tzSelect.value = visitorTz; picked = { date: null, slot: null, at: null };
       })
       .catch(function (err) {
         status.classList.add('is-err');
         status.textContent = err.message === 'Failed to fetch' ? 'Booking failed. Check your connection and try again.' : err.message;
-        if (err.status === 409) { picked.time = null; picked.at = null; loadAvailability(true); }
+        if (err.status === 409) { picked.slot = null; picked.at = null; loadAvailability(true); }
       })
       .then(function () { submitBtn.disabled = false; submitBtn.firstChild.textContent = 'Book Call '; });
   });

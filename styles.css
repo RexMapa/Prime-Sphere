@@ -910,3 +910,13 @@ img.avatar { object-fit: cover; }
   .blog-grid { grid-template-columns: 1fr; }
   .slot-list { max-height: none; }
 }
+
+/* Time zone picker on the booking form */
+.tz-field { max-width: 460px; }
+.tz-field select {
+  min-height: 48px; padding: 12px 40px 12px 14px; border-radius: 4px; border: 1px solid var(--line-2);
+  background: rgba(255,255,255,0.02) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23B6C2D6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 14px center;
+  color: var(--text); font-size: 15px; appearance: none; -webkit-appearance: none; cursor: pointer;
+}
+.tz-field select:focus { outline: none; border-color: var(--accent); }
+.tz-field select option { background: #0B1730; color: var(--text); }
