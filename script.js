@@ -222,19 +222,36 @@
       $('.field-error', field).textContent = msg || '';
       input.setAttribute('aria-invalid', msg ? 'true' : 'false');
     }
+    function labelText(el) {
+      return el.closest('.field').firstChild.textContent.replace('*', '').trim().toLowerCase();
+    }
     function validate() {
       var ok = true;
-      $$('input, textarea', form).forEach(function (el) {
+      $$('input[type="text"], input[type="email"], input[type="tel"], textarea', form).forEach(function (el) {
         var msg = '';
         var v = el.value.trim();
-        if (el.required && !v) msg = 'Enter your ' + el.closest('.field').firstChild.textContent.trim().toLowerCase() + '.';
+        if (el.required && !v) msg = el.getAttribute('data-error') || ('Enter your ' + labelText(el) + '.');
         else if (el.type === 'email' && v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) msg = 'Enter an email like name@company.com.';
+        else if (el.type === 'tel' && v && v.replace(/\D/g, '').length < 7) msg = 'Enter a phone number with at least 7 digits.';
         setError(el, msg);
         if (msg && ok) { el.focus(); ok = false; }
       });
+      $$('.chip-group', form).forEach(function (g) {
+        var picked = $$('input:checked', g).length > 0;
+        g.classList.toggle('has-error', !picked);
+        $('.field-error', g).textContent = picked ? '' : g.getAttribute('data-required');
+        if (!picked && ok) { $('input', g).focus(); ok = false; }
+      });
       return ok;
     }
-    $$('input, textarea', form).forEach(function (el) {
+    $$('.chip-group input', form).forEach(function (el) {
+      el.addEventListener('change', function () {
+        var g = el.closest('.chip-group');
+        g.classList.remove('has-error');
+        $('.field-error', g).textContent = '';
+      });
+    });
+    $$('input[type="text"], input[type="email"], input[type="tel"], textarea', form).forEach(function (el) {
       el.addEventListener('input', function () { if (el.closest('.field').classList.contains('has-error')) setError(el, ''); });
     });
 
@@ -250,7 +267,12 @@
       if (!endpoint) {
         var to = form.getAttribute('data-email');
         var body = 'Name: ' + data.get('firstName') + ' ' + data.get('lastName') +
-          '\nEmail: ' + data.get('email') + '\nPhone: ' + data.get('phone') + '\n\n' + data.get('message');
+          '\nFrom: ' + (data.get('company') || '-') +
+          '\nI need help with: ' + (data.get('helpWith') || '-') +
+          '\nI\'d like to discuss: ' + data.getAll('discuss').join(', ') +
+          '\nMonthly budget: ' + data.get('budget') +
+          '\nReply to: ' + data.get('email') +
+          '\nCall me on: ' + data.get('phone');
         window.location.href = 'mailto:' + to + '?subject=' + encodeURIComponent('New project enquiry') + '&body=' + encodeURIComponent(body);
         status.classList.add('is-ok');
         status.textContent = 'Your email app is opening with the message ready to send.';

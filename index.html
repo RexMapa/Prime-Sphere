@@ -343,14 +343,39 @@
     <form class="form reveal" id="contact-form" novalidate data-endpoint="" data-email="hello@yourdomain.com">
       <h3>Feel Free to Contact Us</h3>
       <div class="form-row">
-        <label class="field">First Name<input name="firstName" type="text" autocomplete="given-name" placeholder="Jane" required><span class="field-error"></span></label>
-        <label class="field">Last Name<input name="lastName" type="text" autocomplete="family-name" placeholder="Doe"><span class="field-error"></span></label>
+        <label class="field">First Name*<input name="firstName" type="text" autocomplete="given-name" placeholder="First name" required><span class="field-error"></span></label>
+        <label class="field">Last Name*<input name="lastName" type="text" autocomplete="family-name" placeholder="Last name" required><span class="field-error"></span></label>
       </div>
       <div class="form-row">
-        <label class="field">Email<input name="email" type="email" autocomplete="email" placeholder="you@company.com" required><span class="field-error"></span></label>
-        <label class="field">Phone Number<input name="phone" type="tel" autocomplete="tel" placeholder="+00 000 000 0000"><span class="field-error"></span></label>
+        <label class="field">From<input name="company" type="text" autocomplete="organization" placeholder="Company name"><span class="field-error"></span></label>
+        <label class="field">I need help with<input name="helpWith" type="text" placeholder="Tell us more about your project"><span class="field-error"></span></label>
       </div>
-      <label class="field">Message<textarea name="message" rows="5" placeholder="Tell us about your project" required></textarea><span class="field-error"></span></label>
+      <fieldset class="field chip-group" data-required="Choose at least one topic.">
+        <legend>I'd like to discuss*</legend>
+        <div class="chips">
+          <label class="chip"><input type="checkbox" name="discuss" value="Website Design & Development"><span>Website Design &amp; Development</span></label>
+          <label class="chip"><input type="checkbox" name="discuss" value="Digital Marketing"><span>Digital Marketing</span></label>
+          <label class="chip"><input type="checkbox" name="discuss" value="SEO"><span>SEO</span></label>
+          <label class="chip"><input type="checkbox" name="discuss" value="Asset Creation"><span>Asset Creation</span></label>
+          <label class="chip"><input type="checkbox" name="discuss" value="Paid Social Media"><span>Paid Social Media</span></label>
+          <label class="chip"><input type="checkbox" name="discuss" value="Others"><span>Others</span></label>
+        </div>
+        <span class="field-error"></span>
+      </fieldset>
+      <fieldset class="field chip-group" data-required="Choose a monthly budget.">
+        <legend>My monthly budget is*</legend>
+        <div class="chips">
+          <label class="chip"><input type="radio" name="budget" value="<$5K"><span>&lt;$5K</span></label>
+          <label class="chip"><input type="radio" name="budget" value="$5K - $10K"><span>$5K - $10K</span></label>
+          <label class="chip"><input type="radio" name="budget" value="$10K - $50K"><span>$10K - $50K</span></label>
+          <label class="chip"><input type="radio" name="budget" value="$50K+"><span>$50K+</span></label>
+        </div>
+        <span class="field-error"></span>
+      </fieldset>
+      <div class="form-row">
+        <label class="field">Reply to*<input name="email" type="email" autocomplete="email" placeholder="Email" required data-error="Enter your email address."><span class="field-error"></span></label>
+        <label class="field">Call me on*<input name="phone" type="tel" autocomplete="tel" placeholder="Phone number" required data-error="Enter your phone number."><span class="field-error"></span></label>
+      </div>
       <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
         <button type="submit" class="btn">Send Message
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg>
