@@ -198,6 +198,87 @@
     });
   }
 
+  /* ---------- Shopify stores: hover scroll + lightbox ---------- */
+  var shots = $$('.store-shot');
+  // Hover scroll distance: move the screenshot so its bottom reaches the frame
+  function setScrollDistance(btn) {
+    var img = $('img', btn);
+    if (!img.naturalWidth) return;
+    var frameH = btn.clientHeight - 26;
+    var imgH = btn.clientWidth * (img.naturalHeight / img.naturalWidth);
+    var dist = Math.max(0, imgH - frameH);
+    btn.style.setProperty('--scroll', '-' + dist.toFixed(0) + 'px');
+  }
+  shots.forEach(function (btn) {
+    var img = $('img', btn);
+    if (img.complete) setScrollDistance(btn); else img.addEventListener('load', function () { setScrollDistance(btn); });
+  });
+  window.addEventListener('resize', function () { shots.forEach(setScrollDistance); });
+
+  var lb = $('#lightbox');
+  if (lb && shots.length) {
+    var lbImg = $('.lightbox-scroll img', lb);
+    var lbScroll = $('.lightbox-scroll', lb);
+    var lbTitle = $('#lightbox-title', lb);
+    var lbVisit = $('.lightbox-visit', lb);
+    var lbPanel = $('.lightbox-panel', lb);
+    var lbIndex = 0, lastFocus = null;
+
+    function load(i) {
+      lbIndex = (i + shots.length) % shots.length;
+      var b = shots[lbIndex];
+      lbImg.classList.remove('is-ready');
+      lbImg.onload = function () { lbImg.classList.add('is-ready'); };
+      lbImg.src = b.getAttribute('data-full');
+      lbImg.alt = 'Full page screenshot of ' + b.getAttribute('data-title');
+      if (lbImg.complete) lbImg.classList.add('is-ready');
+      lbTitle.textContent = b.getAttribute('data-title');
+      lbVisit.href = b.getAttribute('data-url') || '#';
+      lbScroll.scrollTop = 0;
+    }
+    function open(i) {
+      lastFocus = document.activeElement;
+      // Zoom from the clicked card
+      var r = shots[i].getBoundingClientRect();
+      lbPanel.style.setProperty('--ox', (r.left + r.width / 2) + 'px');
+      lbPanel.style.setProperty('--oy', (r.top + r.height / 2) + 'px');
+      load(i);
+      lb.hidden = false;
+      document.body.classList.add('lightbox-open');
+      requestAnimationFrame(function () {
+        var pr = lbPanel.getBoundingClientRect();
+        lbPanel.style.setProperty('--ox', (r.left + r.width / 2 - pr.left) + 'px');
+        lbPanel.style.setProperty('--oy', (r.top + r.height / 2 - pr.top) + 'px');
+        requestAnimationFrame(function () { lb.classList.add('is-open'); });
+      });
+      $('[data-close].lightbox-btn', lb).focus();
+    }
+    function close() {
+      lb.classList.remove('is-open');
+      document.body.classList.remove('lightbox-open');
+      setTimeout(function () { lb.hidden = true; }, reduceMotion ? 0 : 400);
+      if (lastFocus) lastFocus.focus();
+    }
+    shots.forEach(function (b, i) { b.addEventListener('click', function () { open(i); }); });
+    $$('[data-close]', lb).forEach(function (el) { el.addEventListener('click', close); });
+    $$('[data-nav]', lb).forEach(function (el) {
+      el.addEventListener('click', function () { load(lbIndex + parseInt(el.getAttribute('data-nav'), 10)); });
+    });
+    document.addEventListener('keydown', function (e) {
+      if (lb.hidden) return;
+      if (e.key === 'Escape') close();
+      else if (e.key === 'ArrowRight') load(lbIndex + 1);
+      else if (e.key === 'ArrowLeft') load(lbIndex - 1);
+      else if (e.key === 'Tab') {
+        // keep focus inside the lightbox
+        var f = $$('a[href], button, [tabindex="0"]', lb).filter(function (el) { return el.offsetParent !== null; });
+        var first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    });
+  }
+
   /* ---------- Subtle parallax on ghost words ---------- */
   if (!reduceMotion && window.matchMedia('(min-width: 861px)').matches) {
     var ghosts = $$('.about .ghost-word, .work-head .ghost-word');
