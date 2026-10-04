@@ -12,6 +12,9 @@
   var ICON_DOWN = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
   var ICON_SEND = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg>';
   var ICON_UP = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v11H3V10z"/><path d="M7 10l4-8a3 3 0 0 1 3 3v4h5.5a2 2 0 0 1 2 2.3l-1.4 8A2 2 0 0 1 18.1 21H7"/></svg>';
+  var ICON_MORE = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>';
+  var ICON_PLUS = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+  var ICON_X = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>';
   var ICON_DOWN_THUMB = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 14V3h4v11z"/><path d="M17 14l-4 8a3 3 0 0 1-3-3v-4H4.5a2 2 0 0 1-2-2.3l1.4-8A2 2 0 0 1 5.9 3H17"/></svg>';
 
   function el(tag, attrs, children) {
@@ -49,6 +52,20 @@
   var sendBtn = el('button', { type: 'submit', class: 'chat-send', 'aria-label': 'Send message', html: ICON_SEND });
   var errorLine = el('p', { class: 'chat-error', role: 'alert' });
   var endLink = el('button', { type: 'button', class: 'chat-end', text: 'End chat', hidden: true });
+  // Header menu: start a new chat / end this chat
+  var menuNew = el('button', { type: 'button', class: 'chat-menu-item', role: 'menuitem', html: ICON_PLUS }, ['Start a new chat']);
+  var menuEnd = el('button', { type: 'button', class: 'chat-menu-item chat-menu-item--danger', role: 'menuitem', html: ICON_X }, ['End chat']);
+  var menu = el('div', { class: 'chat-menu', id: 'chat-menu', role: 'menu', hidden: true }, [menuNew, menuEnd]);
+  var menuBtn = el('button', { type: 'button', class: 'chat-min chat-more', 'aria-label': 'Chat options', 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'aria-controls': 'chat-menu', hidden: true, html: ICON_MORE });
+
+  // Inline confirmation (replaces the browser confirm() popup)
+  var confirmText = el('p', { class: 'chat-confirm-text' });
+  var confirmYes = el('button', { type: 'button', class: 'chat-confirm-yes' });
+  var confirmNo = el('button', { type: 'button', class: 'chat-confirm-no', text: 'Cancel' });
+  var confirmBar = el('div', { class: 'chat-confirm', role: 'alertdialog', 'aria-label': 'Confirm', hidden: true }, [
+    confirmText, el('div', { class: 'chat-confirm-actions' }, [confirmNo, confirmYes])
+  ]);
+
   var composer = el('form', { class: 'chat-composer' }, [
     el('div', { class: 'chat-compose-row' }, [input, sendBtn]),
     el('div', { class: 'chat-compose-foot' }, [errorLine, endLink])
@@ -60,9 +77,14 @@
         el('h2', { text: 'Have a question?' }),
         el('p', { text: 'We usually reply in a few minutes' })
       ]),
-      el('button', { type: 'button', class: 'chat-min', 'aria-label': 'Minimise chat', html: ICON_DOWN, onclick: function () { setOpen(false); } })
+      el('div', { class: 'chat-head-actions' }, [
+        menuBtn,
+        el('button', { type: 'button', class: 'chat-min', 'aria-label': 'Minimise chat', html: ICON_DOWN, onclick: function () { setOpen(false); } })
+      ]),
+      menu
     ]),
     log,
+    confirmBar,
     composer
   ]);
 
@@ -85,9 +107,27 @@
   }
 
   function resetSession() {
+    clearTimeout(pollTimer);
     state = { open: state.open };
     messages = []; status = 'none'; rating = ''; hasEmail = false;
     save();
+    hideConfirm(); showError('');
+  }
+
+  function startNewChat() {
+    resetSession();
+    render();
+    input.value = ''; autosize();
+    input.focus();
+  }
+
+  // Ends the current chat on the server. Resolves once it's closed.
+  function endChat() {
+    return api('POST', '?action=end').then(function () {
+      status = 'closed';
+      render();
+      poll(); // pick up the saved system message and stop polling
+    });
   }
 
   /* ---------- Rendering ---------- */
@@ -117,9 +157,9 @@
     if (status === 'closed') {
       nodes.push(el('p', { class: 'chat-system chat-system--ended', text: 'Your chat has ended' }));
       nodes.push(feedbackCard());
-      nodes.push(el('div', { class: 'chat-card' }, [
-        el('p', { text: 'To start a new chat,' }),
-        el('button', { type: 'button', class: 'chat-link', text: 'Click here', onclick: function () { resetSession(); render(); input.focus(); } })
+      nodes.push(el('div', { class: 'chat-card chat-card--center' }, [
+        el('p', { text: 'Got another question?' }),
+        el('button', { type: 'button', class: 'chat-new-btn', html: ICON_PLUS, onclick: startNewChat }, ['Start a new chat'])
       ]));
     }
     var atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 80;
@@ -129,7 +169,59 @@
     var ended = status === 'closed';
     composer.hidden = ended;
     endLink.hidden = status !== 'open';
+    menuBtn.hidden = !state.id;          // nothing to end or restart before the first message
+    menuEnd.hidden = status !== 'open';
+    if (!state.id) closeMenu();
   }
+
+  /* ---------- Menu + confirm ---------- */
+  function openMenu() {
+    menu.hidden = false; menuBtn.setAttribute('aria-expanded', 'true');
+    var first = menu.querySelector('.chat-menu-item:not([hidden])');
+    if (first) first.focus();
+  }
+  function closeMenu() { menu.hidden = true; menuBtn.setAttribute('aria-expanded', 'false'); }
+  menuBtn.addEventListener('click', function (e) { e.stopPropagation(); menu.hidden ? openMenu() : closeMenu(); });
+  document.addEventListener('click', function (e) { if (!menu.hidden && !menu.contains(e.target)) closeMenu(); });
+  menu.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { e.stopPropagation(); closeMenu(); menuBtn.focus(); }
+  });
+
+  var confirmAction = null;
+  function askConfirm(text, yesLabel, action) {
+    closeMenu();
+    confirmText.textContent = text;
+    confirmYes.textContent = yesLabel;
+    confirmAction = action;
+    confirmBar.hidden = false;
+    confirmYes.disabled = false;
+    confirmNo.focus();
+  }
+  function hideConfirm() { confirmBar.hidden = true; confirmAction = null; }
+  confirmNo.addEventListener('click', function () { hideConfirm(); input.focus(); });
+  confirmBar.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.stopPropagation(); hideConfirm(); } });
+  confirmYes.addEventListener('click', function () {
+    if (!confirmAction) return;
+    confirmYes.disabled = true;
+    Promise.resolve(confirmAction()).then(hideConfirm, function (err) {
+      confirmYes.disabled = false;
+      hideConfirm();
+      showError(err && err.message);
+    });
+  });
+
+  menuEnd.addEventListener('click', function () {
+    askConfirm('End this chat? You can still rate it and start a new one after.', 'End chat', endChat);
+  });
+  menuNew.addEventListener('click', function () {
+    if (status === 'open') {
+      askConfirm('Start a new chat? Your current chat will be ended.', 'Start new chat', function () {
+        return endChat().then(startNewChat);
+      });
+    } else {
+      startNewChat();
+    }
+  });
 
   function feedbackCard() {
     if (rating) return el('div', { class: 'chat-card' }, [el('p', { class: 'chat-card-label', text: 'Feedback' }), el('p', { text: 'Thanks for your feedback.' })]);
@@ -187,7 +279,9 @@
   function poll() {
     clearTimeout(pollTimer);
     if (!state.id) return;
+    var sid = state.id;
     api('GET', '?after=' + lastId()).then(function (data) {
+      if (sid !== state.id) return; // a new chat was started while this was in flight
       var fresh = (data.messages || []).filter(function (m) { return !messages.some(function (x) { return x.id === m.id; }); });
       var changed = fresh.length || data.status !== status || data.rating !== rating || !!data.email !== hasEmail;
       messages = messages.concat(fresh);
@@ -196,6 +290,7 @@
       if (state.open) markSeen(); else updateBadge();
       schedule();
     }).catch(function (err) {
+      if (sid !== state.id) return;
       if (err.status === 401 || err.status === 404) { resetSession(); render(); return; }
       schedule(); // network blip, try again later
     });
@@ -222,6 +317,7 @@
       if (status !== 'closed') input.focus();
       poll();
     } else {
+      closeMenu();
       panel.classList.remove('is-in');
       setTimeout(function () { if (!state.open) panel.hidden = true; }, 250);
       launcher.focus();
@@ -229,7 +325,12 @@
     }
   }
   launcher.addEventListener('click', function () { setOpen(!state.open); });
-  panel.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
+  panel.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (!menu.hidden) { closeMenu(); menuBtn.focus(); return; }
+    if (!confirmBar.hidden) { hideConfirm(); return; }
+    setOpen(false);
+  });
 
   /* ---------- Sending ---------- */
   function autosize() { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 120) + 'px'; }
@@ -272,8 +373,7 @@
   });
 
   endLink.addEventListener('click', function () {
-    if (!confirm('End this chat?')) return;
-    api('POST', '?action=end').then(function () { poll(); }).catch(function (e) { showError(e.message); });
+    askConfirm('End this chat? You can still rate it and start a new one after.', 'End chat', endChat);
   });
 
   /* ---------- Start ---------- */
