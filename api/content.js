@@ -1,13 +1,20 @@
 // GET /api/content          -> all published homepage sections (posts without their full text)
+// GET /api/content?promo=1  -> the countdown offer (or null)
 // GET /api/content?post=12  -> one published blog post with its full text
 import { db, ensureSchema } from '../lib/db.js';
 import { route, send, HttpError } from '../lib/http.js';
+import { getPromo } from '../lib/promo.js';
 
 const CACHE = { 'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=30' };
 
 export default route(['GET'], async (req, res) => {
   await ensureSchema();
   const { query } = db();
+  if (new URL(req.url, 'http://x').searchParams.get('promo')) {
+    const p = await getPromo(query);
+    const live = p.enabled && p.endsAt && Date.parse(p.endsAt) > Date.now();
+    return send(res, 200, { promo: live ? p : null, now: Date.now() }, { 'Cache-Control': 'public, s-maxage=5, stale-while-revalidate=10' });
+  }
   const postId = Number(new URL(req.url, 'http://x').searchParams.get('post'));
 
   if (postId) {

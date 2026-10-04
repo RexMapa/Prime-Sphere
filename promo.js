@@ -1,4 +1,4 @@
-// Homepage countdown offer. Settings come from /api/promo (managed in Admin > Content > Countdown offer).
+// Homepage countdown offer. Settings come from /api/content?promo=1 (managed in Admin > Content > Countdown offer).
 (function () {
   'use strict';
   var C = 2 * Math.PI * 52, UNITS = [['Days', 7], ['Hours', 24], ['Minutes', 60], ['Seconds', 60]];
@@ -6,7 +6,7 @@
   function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text) n.textContent = text; return n; }
   function svgNS(tag, attrs) { var n = document.createElementNS('http://www.w3.org/2000/svg', tag); for (var k in attrs) n.setAttribute(k, attrs[k]); return n; }
 
-  fetch('/api/promo').then(function (r) { return r.json(); }).then(function (d) {
+  fetch('/api/content?promo=1').then(function (r) { return r.json(); }).then(function (d) {
     if (!d.promo) return;
     var p = d.promo, end = Date.parse(p.endsAt), skew = (d.now || Date.now()) - Date.now();
     var anchor = document.getElementById('about'); if (!anchor) return;
