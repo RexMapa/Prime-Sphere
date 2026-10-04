@@ -583,7 +583,21 @@
   function renderProjectGrid(box, items) {
     var section = box.closest('section'); if (section) section.hidden = !items.length;
     box.replaceChildren();
-    items.forEach(function (p, i) { var card = projectCard(p); if (i % 3) card.style.setProperty('--d', (i % 3) * 0.08 + 's'); box.appendChild(card); reveal(card); });
+    items.forEach(function (p, i) {
+      var card;
+      if (p.image) {
+        // Same card, hover scroll and popup as the Shopify stores
+        var pages = [{ label: 'Overview', image: p.image }];
+        if (p.image2) pages.push({ label: 'Results', image: p.image2 });
+        if (p.image3) pages.push({ label: 'Details', image: p.image3 });
+        card = storeCard({ name: p.title, category: p.tags || '', url: p.url || '', pages: pages }, i);
+        card.removeAttribute('data-category');
+      } else {
+        card = projectCard(p);
+      }
+      box.appendChild(card); reveal(card);
+    });
+    prepShots();
   }
 
   // Each section is redrawn only when its own items change, so carousels and the logo strip
