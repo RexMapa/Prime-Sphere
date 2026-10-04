@@ -64,6 +64,24 @@
   $$('a', links).forEach(function (a) { a.addEventListener('click', function () { setMenu(false); }); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setMenu(false); });
 
+  /* ---------- Services dropdown ---------- */
+  $$('.nav-dd').forEach(function (dd) {
+    var btn = $('.nav-dd-toggle', dd);
+    function setDd(open) {
+      dd.classList.toggle('is-open', open);
+      dd.classList.toggle('is-closed', !open && dd.matches(':hover, :focus-within') && window.innerWidth > 860);
+      btn.setAttribute('aria-expanded', String(open));
+      btn.setAttribute('aria-label', open ? 'Hide services' : 'Show services');
+    }
+    btn.addEventListener('click', function (e) { e.stopPropagation(); setDd(!dd.classList.contains('is-open')); });
+    dd.addEventListener('mouseleave', function () { dd.classList.remove('is-closed'); if (window.innerWidth > 860) setDd(false); });
+    dd.addEventListener('focusout', function (e) { if (!dd.contains(e.relatedTarget)) { dd.classList.remove('is-closed'); if (window.innerWidth > 860) setDd(false); } });
+    document.addEventListener('click', function (e) { if (!dd.contains(e.target) && window.innerWidth > 860) setDd(false); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && dd.classList.contains('is-open')) { setDd(false); btn.focus(); }
+    });
+  });
+
   /* ---------- Active nav link on scroll ---------- */
   var navAnchors = $$('.nav-links a');
   // Only same-page links (#section) are highlighted on scroll
