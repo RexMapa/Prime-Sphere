@@ -200,8 +200,10 @@ p { margin: 0; }
 }
 .slide.is-active { opacity: 1; transform: scale(1); }
 .slide--1 { background: radial-gradient(circle at 50% 55%, #10305E 0%, #0B1730 55%, #071022 100%); }
-.slide--2 { background: radial-gradient(circle at 30% 40%, #0F2C55 0%, #0B1730 60%); }
-.slide--3 { background: radial-gradient(circle at 70% 60%, #123462 0%, #0B1730 60%); }
+.slide--2 { background: url("assets/hero-websites.jpg") center / cover no-repeat, radial-gradient(circle at 30% 40%, #0F2C55 0%, #0B1730 60%); }
+.slide--3 { background: url("assets/hero-campaigns.jpg") center / cover no-repeat, radial-gradient(circle at 70% 60%, #123462 0%, #0B1730 60%); }
+.slide--2 strong, .slide--3 strong { text-shadow: 0 2px 24px rgba(5, 11, 24, 0.85); }
+.slide--2 span, .slide--3 span { color: var(--text-2); text-shadow: 0 1px 14px rgba(5, 11, 24, 0.9); }
 .slide strong { font-family: var(--display); font-size: clamp(20px, 2.4vw, 30px); color: var(--text); font-weight: 700; }
 
 .globe-orbit { position: relative; width: 220px; height: 150px; display: flex; align-items: center; justify-content: center; }
