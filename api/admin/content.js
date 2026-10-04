@@ -17,7 +17,7 @@ const toJson = (r) => ({ id: r.id, type: r.type, data: r.data, published: r.publ
 const images = (type, data) => (IMAGE_FIELDS[type] || []).map((f) => data && data[f]).filter(Boolean);
 
 export default route(['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], async (req, res) => {
-  requireAdmin(req);
+  await requireAdmin(req);
   await ensureSchema();
   const { query } = db();
   const params = new URL(req.url, 'http://x').searchParams;

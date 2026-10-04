@@ -8,7 +8,7 @@ const TYPES = { 'image/webp': 'webp', 'image/jpeg': 'jpg', 'image/png': 'png' };
 const LIMIT = 4.4 * 1024 * 1024; // Vercel functions accept bodies up to 4.5 MB
 
 export default route(['POST'], async (req, res) => {
-  requireAdmin(req);
+  await requireAdmin(req);
   requireFetchHeader(req);
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
     const e = new HttpError(500, 'Image uploads need a Vercel Blob store. In Vercel, open Storage, create a Blob store and connect it to this project, then redeploy.');

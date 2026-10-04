@@ -57,6 +57,14 @@
   }
 
   /* ---------- Auth ---------- */
+  var VIEWS = ['messages', 'bookings', 'chat', 'content', 'stores', 'team'];
+  var me = null; // { id, name, email, role, isOwner }
+  function setMe(data) {
+    me = data;
+    $('#me-name').textContent = me.name || me.email;
+    $('#me-avatar').textContent = (me.name || me.email || '?').trim().charAt(0).toUpperCase();
+    $('#team-tab').hidden = me.role !== 'super';
+  }
   function showLogin(msg) {
     if (typeof stopChatPolling === 'function') stopChatPolling();
     $('#boot').hidden = true;
@@ -65,12 +73,14 @@
     $('#login-msg').textContent = msg || '';
     $('#login-form [name="email"]').focus();
   }
-  function showApp() {
+  function showApp(data) {
+    if (data && data.id) setMe(data);
     $('#boot').hidden = true;
     $('#login').hidden = true;
     $('#app').hidden = false;
     var h = location.hash.slice(1);
-    setView(['messages', 'bookings', 'chat', 'content', 'stores'].indexOf(h) > -1 ? h : 'messages');
+    if (h === 'team' && (!me || me.role !== 'super')) h = 'messages';
+    setView(VIEWS.indexOf(h) > -1 ? h : 'messages');
     startUnreadWatch();
   }
 
@@ -83,7 +93,7 @@
     btn.disabled = true; btn.textContent = 'Signing in';
     msg.textContent = '';
     api('/api/auth?action=login', { method: 'POST', json: { email: f.email.value, password: f.password.value }, allow401: true })
-      .then(function () { f.password.value = ''; showApp(); })
+      .then(function (d) { f.password.value = ''; chat.lastUnread = null; chat.selected = null; showApp(d); })
       .catch(function (err) { msg.textContent = err.message; f.password.select(); })
       .then(function () { btn.disabled = false; btn.textContent = 'Sign in'; });
   });
@@ -99,13 +109,14 @@
     $$('.tab').forEach(function (t) {
       if (t.getAttribute('data-view') === name) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
     });
-    ['messages', 'bookings', 'chat', 'content', 'stores'].forEach(function (v) { $('#view-' + v).hidden = name !== v; });
+    VIEWS.forEach(function (v) { $('#view-' + v).hidden = name !== v; });
     history.replaceState(null, '', '#' + name);
     stopChatPolling();
     if (name === 'messages') loadMessages();
     else if (name === 'bookings') loadBookings();
     else if (name === 'chat') startChatPolling();
     else if (name === 'content') loadContent();
+    else if (name === 'team') loadTeam();
     else loadStores();
   }
   $$('.tab').forEach(function (t) { t.addEventListener('click', function () { setView(t.getAttribute('data-view')); }); });
@@ -1020,10 +1031,14 @@
   try { $('#chat-sound').checked = localStorage.getItem('ps_admin_sound') !== 'off'; } catch (e) {}
   $('#chat-sound').addEventListener('change', function (e) { try { localStorage.setItem('ps_admin_sound', e.target.checked ? 'on' : 'off'); } catch (x) {} });
 
-  function setUnread(n, open) {
+  function setUnread(n, open, d) {
     var b = $('#chat-badge');
     b.hidden = !n; b.textContent = n;
     $('#chat-open-count').textContent = open ? open : '';
+    if (d) {
+      $('#chat-mine-count').textContent = d.mine ? d.mine : '';
+      $('#chat-unassigned-count').textContent = d.unassigned ? d.unassigned : '';
+    }
     document.title = n ? '(' + n + ') New chat message | ' + baseTitle : baseTitle;
     if (chat.lastUnread !== null && n > chat.lastUnread) chime();
     chat.lastUnread = n;
@@ -1035,7 +1050,7 @@
     var tick = function () {
       if ($('#app').hidden) return;
       if (currentView !== 'chat' && !document.hidden) {
-        api('/api/admin/chat?status=open').then(function (d) { setUnread(d.unread, d.open); }).catch(function () {});
+        api('/api/admin/chat?status=open').then(function (d) { setUnread(d.unread, d.open, d); }).catch(function () {});
         if (currentView !== 'bookings') api('/api/admin/submissions?kind=booking&status=upcoming').then(function (d) { setBookingBadge(d.counts.newBookings); }).catch(function () {});
       }
       watchTimer = setTimeout(tick, 15000);
@@ -1052,7 +1067,7 @@
     if (!chat.sessions.length && !list.children.length) list.replaceChildren(el('p', { class: 'list-empty', text: 'Loading chats' }));
     api('/api/admin/chat?status=' + chat.status).then(function (d) {
       chat.sessions = d.sessions;
-      setUnread(d.unread, d.open);
+      setUnread(d.unread, d.open, d);
       renderChatList();
     }).catch(function (err) {
       if (err.status !== 401) list.replaceChildren(el('p', { class: 'list-empty', text: err.message }));
@@ -1064,7 +1079,12 @@
   function renderChatList() {
     var list = $('#chat-list');
     if (!chat.sessions.length) {
-      list.replaceChildren(el('p', { class: 'list-empty', text: chat.status === 'open' ? 'No open chats right now. When a visitor sends a message it appears here.' : 'No chats here yet.' }));
+      var emptyText = {
+        open: 'No open chats right now. When a visitor sends a message it appears here.',
+        mine: "You aren't handling any chats. Take one from Unassigned.",
+        unassigned: 'Every open chat has someone on it.'
+      }[chat.status] || 'No chats here yet.';
+      list.replaceChildren(el('p', { class: 'list-empty', text: emptyText }));
       return;
     }
     list.replaceChildren.apply(list, chat.sessions.map(function (s) {
@@ -1077,12 +1097,20 @@
         el('span', { class: 'msg-name', text: chatName(s) }),
         el('span', { class: 'msg-date', text: fmtDate(s.lastMessageAt) }),
         el('span', { class: 'msg-sub' }, [
-          el('span', { text: (s.previewSender === 'admin' ? 'You: ' : '') + (s.preview || '') }),
+          el('span', { text: (s.previewSender === 'admin' ? (me && s.previewAdminId === me.id ? 'You: ' : 'Team: ') : '') + (s.preview || '') }),
           s.unread && !current ? el('span', { class: 'unread-pill', text: String(s.unread) }) : null,
+          ownerTag(s),
           s.rating ? el('span', { text: s.rating === 'up' ? 'Rated good' : 'Rated bad' }) : null
         ])
       ]);
     }));
+  }
+
+  function ownerTag(s) {
+    if (s.status !== 'open') return null;
+    if (s.mine) return el('span', { class: 'owner-tag owner-tag--mine', text: 'You' });
+    if (s.assignedId) return el('span', { class: 'owner-tag', text: s.assignedName || 'Taken' });
+    return el('span', { class: 'owner-tag owner-tag--free', text: 'Unassigned' });
   }
 
   function openChat(id) {
@@ -1099,7 +1127,7 @@
     var after = full ? 0 : (chat.messages.length ? chat.messages[chat.messages.length - 1].id : 0);
     api('/api/admin/chat?id=' + encodeURIComponent(id) + '&after=' + after).then(function (d) {
       if (chat.selected !== id) return;
-      var changed = full || d.messages.length || !chat.session || d.session.status !== chat.session.status || d.session.email !== chat.session.email || d.session.rating !== chat.session.rating;
+      var changed = full || d.messages.length || !chat.session || d.session.status !== chat.session.status || d.session.email !== chat.session.email || d.session.rating !== chat.session.rating || d.session.assignedId !== chat.session.assignedId;
       chat.session = d.session;
       chat.messages = full ? d.messages : chat.messages.concat(d.messages.filter(function (m) { return !chat.messages.some(function (x) { return x.id === m.id; }); }));
       if (changed) renderThread(full);
@@ -1126,17 +1154,33 @@
 
     var logEl = el('div', { class: 'thread-log', role: 'log', 'aria-live': 'polite' }, chat.messages.map(function (m) {
       if (m.sender === 'system') return el('p', { class: 't-system', text: m.body + ' · ' + fmtDate(m.createdAt) });
-      return el('div', { class: 't-row t-row--' + m.sender }, [
+      if (m.sender === 'note') return el('p', { class: 't-system t-note', title: 'Only admins can see this', text: m.body + ' · ' + fmtDate(m.createdAt) });
+      var mineMsg = m.sender === 'admin' && me && m.adminId === me.id;
+      var who = m.sender === 'admin' ? (mineMsg ? 'You' : (m.name || 'Team')) : 'Visitor';
+      return el('div', { class: 't-row t-row--' + m.sender + (m.sender === 'admin' && !mineMsg ? ' t-row--teammate' : '') }, [
         el('div', { class: 't-bubble' }, [
-          el('span', { class: 'sr-only', text: m.sender === 'admin' ? 'You: ' : 'Visitor: ' }),
+          el('span', { class: 'sr-only', text: who + ': ' }),
           el('span', { text: m.body }),
-          el('time', { text: fmtDate(m.createdAt), datetime: m.createdAt })
+          el('time', { text: (m.sender === 'admin' && !mineMsg ? who + ' · ' : '') + fmtDate(m.createdAt), datetime: m.createdAt })
         ])
       ]);
     }));
 
     var foot;
-    if (s.status === 'open') {
+    var isSuper = me && me.role === 'super';
+    if (s.status === 'open' && !s.assignedId) {
+      foot = [el('div', { class: 'thread-note thread-note--claim' }, [
+        el('span', {}, [el('strong', { text: 'Nobody is handling this chat yet.' }), ' Take it to reply. Other admins will see that it\'s yours.']),
+        el('button', { type: 'button', class: 'btn', text: 'Take this chat', onclick: function (e) { claimChat('claim', e.currentTarget); } })
+      ])];
+    } else if (s.status === 'open' && !s.mine) {
+      foot = [el('div', { class: 'thread-note' }, [
+        el('span', {}, [el('strong', { text: (s.assignedName || 'Another admin') + ' is handling this chat.' }), ' You can read it, but only they can reply.']),
+        isSuper ? el('button', { type: 'button', class: 'ghost-btn', text: 'Take over', onclick: function (e) {
+          if (confirm('Take over this chat from ' + (s.assignedName || 'the other admin') + '? They will no longer be able to reply.')) claimChat('takeover', e.currentTarget);
+        } }) : null
+      ])];
+    } else if (s.status === 'open') {
       var ta = el('textarea', { id: 'reply-box', rows: '1', maxlength: '2000', placeholder: 'Type a reply', 'aria-label': 'Reply' });
       ta.value = draft;
       var sendB = el('button', { type: 'submit', class: 'btn', text: 'Send' });
@@ -1152,7 +1196,7 @@
     } else {
       foot = [el('div', { class: 'thread-note' }, [
         el('span', { text: 'This chat has ended. The visitor can start a new chat from the website.' }),
-        el('button', { type: 'button', class: 'ghost-btn', text: 'Reopen chat', onclick: function () { setChatStatus('open'); } })
+        canManage ? el('button', { type: 'button', class: 'ghost-btn', text: 'Reopen chat', onclick: function () { setChatStatus('open'); } }) : null
       ])];
     }
 
@@ -1160,8 +1204,10 @@
       s.email ? el('a', { href: 'mailto:' + s.email, text: s.email }) : el('span', { text: 'No email given' }),
       s.page ? el('span', { text: 'Started on the ' + (s.page === '/' || s.page === '/index.html' ? 'homepage' : /stores/.test(s.page) ? 'stores page' : s.page + ' page') }) : null,
       el('span', { text: 'Started ' + fmtDate(s.createdAt, true) }),
-      s.rating ? el('span', { text: s.rating === 'up' ? 'Rated: good' : 'Rated: bad' }) : null
+      s.rating ? el('span', { text: s.rating === 'up' ? 'Rated: good' : 'Rated: bad' }) : null,
+      s.status === 'open' ? el('span', { class: 'thread-owner' }, [ownerTag(s), s.assignedId && !s.mine ? ' is handling this' : s.mine ? ' are handling this' : '']) : null
     ];
+    var canManage = !s.assignedId || s.mine || isSuper;
     box.replaceChildren.apply(box, [
       el('div', { class: 'thread-head' }, [
         el('div', {}, [
@@ -1171,8 +1217,9 @@
         ]),
         el('div', { class: 'thread-actions' }, [
           s.email ? el('a', { class: 'ghost-btn', href: 'mailto:' + s.email + '?subject=' + encodeURIComponent('Following up on your chat with PrimeSphere'), text: 'Email visitor' }) : null,
-          s.status === 'open' ? el('button', { type: 'button', class: 'ghost-btn', text: 'End chat', onclick: function () { setChatStatus('closed'); } }) : null,
-          el('button', { type: 'button', class: 'ghost-btn ghost-btn--danger', text: 'Delete', onclick: deleteChat })
+          s.status === 'open' && s.assignedId && (s.mine || isSuper) ? el('button', { type: 'button', class: 'ghost-btn', text: s.mine ? 'Release' : 'Unassign', title: 'Put this chat back in Unassigned', onclick: releaseChat }) : null,
+          s.status === 'open' && canManage ? el('button', { type: 'button', class: 'ghost-btn', text: 'End chat', onclick: function () { setChatStatus('closed'); } }) : null,
+          canManage ? el('button', { type: 'button', class: 'ghost-btn ghost-btn--danger', text: 'Delete', onclick: deleteChat }) : null
         ])
       ]),
       logEl
@@ -1197,6 +1244,24 @@
       .then(function () { replying = false; var b = $('.thread-compose .btn'); if (b) b.disabled = false; });
   }
 
+  function claimChat(action, btn) {
+    if (btn) btn.disabled = true;
+    api('/api/admin/chat', { method: 'PATCH', json: { id: chat.selected, action: action } }).then(function () {
+      toast(action === 'takeover' ? 'You took over this chat.' : 'This chat is yours.');
+    }).catch(function (err) { toast(err.message, true); })
+      .then(function () { loadThread(true); loadChatList(); });
+  }
+
+  function releaseChat() {
+    var s = chat.session;
+    var q = s.mine ? 'Release this chat? It goes back to Unassigned so another admin can take it.' : 'Unassign ' + (s.assignedName || 'this admin') + ' from this chat?';
+    if (!confirm(q)) return;
+    api('/api/admin/chat', { method: 'PATCH', json: { id: chat.selected, action: 'release' } }).then(function () {
+      toast('Chat released.');
+    }).catch(function (err) { toast(err.message, true); })
+      .then(function () { loadThread(true); loadChatList(); });
+  }
+
   function setChatStatus(status) {
     if (status === 'closed' && !confirm('End this chat? The visitor will see that the chat has ended.')) return;
     api('/api/admin/chat', { method: 'PATCH', json: { id: chat.selected, status: status } }).then(function () {
@@ -1219,6 +1284,148 @@
       chat.status = b.getAttribute('data-chat-status');
       loadChatList();
     });
+  });
+
+  /* =========================================================
+     Team (super admins)
+     ========================================================= */
+  var team = [];
+  function fmtAgo(iso) { return iso ? fmtDate(iso) : 'Never'; }
+  function loadTeam() {
+    var list = $('#team-list');
+    if (!team.length) list.replaceChildren(el('p', { class: 'list-empty', text: 'Loading team' }));
+    return api('/api/admin/users').then(function (d) { team = d.admins; renderTeam(); })
+      .catch(function (err) { if (err.status !== 401) list.replaceChildren(el('p', { class: 'list-empty', text: err.message })); });
+  }
+  function renderTeam() {
+    var list = $('#team-list');
+    list.replaceChildren.apply(list, team.map(function (a) {
+      var self = me && a.id === me.id;
+      return el('div', { class: 'store-row team-row' + (a.active ? '' : ' is-hidden') }, [
+        el('div', { class: 'avatar avatar--lg', 'aria-hidden': 'true', text: (a.name || a.email).charAt(0).toUpperCase() }),
+        el('div', { class: 'store-meta' }, [
+          el('strong', { text: (a.name || a.email) + (self ? ' (you)' : '') }),
+          el('span', { class: 'muted', text: a.email }),
+          el('div', { class: 'tags' }, [
+            a.isOwner ? el('span', { class: 'tag tag--featured', text: 'Owner' }) : null,
+            el('span', { class: 'tag' + (a.role === 'super' ? ' tag--super' : ''), text: a.role === 'super' ? 'Super admin' : 'Admin' }),
+            a.active ? null : el('span', { class: 'tag tag--hidden', text: 'Disabled' }),
+            el('span', { class: 'tag tag--plain', text: 'Last sign-in: ' + fmtAgo(a.lastLoginAt) })
+          ])
+        ]),
+        el('div', { class: 'row-actions' }, [
+          el('button', { type: 'button', class: 'ghost-btn', onclick: function () { openAdminEditor(a); } }, [el('span', { html: ICON.edit }), 'Edit']),
+          !a.isOwner && !self ? el('button', { type: 'button', class: 'ghost-btn', text: a.active ? 'Disable' : 'Enable', onclick: function () { toggleAdmin(a); } }) : null,
+          !a.isOwner && !self ? el('button', { type: 'button', class: 'icon-btn icon-btn--danger', 'aria-label': 'Delete ' + a.name, html: ICON.trash, onclick: function () { deleteAdmin(a); } }) : null
+        ])
+      ]);
+    }));
+  }
+  function toggleAdmin(a) {
+    if (a.active && !confirm('Disable ' + a.name + '? They are signed out right away and their open chats go back to Unassigned.')) return;
+    api('/api/admin/users', { method: 'PATCH', json: { id: a.id, active: !a.active } }).then(function () {
+      toast(a.active ? a.name + ' is disabled.' : a.name + ' can sign in again.'); loadTeam();
+    }).catch(function (err) { toast(err.message, true); });
+  }
+  function deleteAdmin(a) {
+    if (!confirm('Delete ' + a.name + "'s account? Their past chat replies stay, and their open chats go back to Unassigned.")) return;
+    api('/api/admin/users?id=' + a.id, { method: 'DELETE' }).then(function () { toast('Admin deleted.'); loadTeam(); })
+      .catch(function (err) { toast(err.message, true); });
+  }
+
+  var editingAdmin = null;
+  function openDrawer(id, focusSel) {
+    var d = $(id);
+    d.hidden = false;
+    requestAnimationFrame(function () { requestAnimationFrame(function () { d.classList.add('is-open'); var f = $(focusSel, d); if (f) f.focus(); }); });
+  }
+  function closeDrawer(id) {
+    var d = $(id);
+    d.classList.remove('is-open');
+    setTimeout(function () { d.hidden = true; }, 350);
+  }
+  function openAdminEditor(a) {
+    editingAdmin = a;
+    var f = $('#admin-form');
+    f.reset();
+    $('#admin-msg').textContent = '';
+    $('#admin-editor-title').textContent = a ? 'Edit ' + (a.name || 'admin') : 'Add admin';
+    $('#admin-save').textContent = a ? 'Save changes' : 'Create admin';
+    f.name.value = a ? a.name : '';
+    f.email.value = a ? a.email : '';
+    f.email.disabled = !!a;
+    var self = a && me && a.id === me.id;
+    f.password.disabled = !!(a && (a.isOwner || self));
+    $('#admin-pw-label').textContent = a ? 'Set a new password' : 'Password*';
+    $('#admin-pw-help').textContent = !a ? 'Share it with them privately. They can change it after signing in.'
+      : a.isOwner ? 'The owner password is set by ADMIN_PASSWORD in Vercel.'
+      : self ? 'Change your own password from My account.'
+      : 'Leave blank to keep their current password. Setting a new one signs them out.';
+    $$('input[name="role"]', f).forEach(function (r) { r.checked = r.value === (a ? a.role : 'admin'); r.disabled = !!(a && (a.isOwner || self)); });
+    openDrawer('#admin-editor', '[name="name"]');
+  }
+  $('#add-admin').addEventListener('click', function () { openAdminEditor(null); });
+  $$('[data-close-admin]').forEach(function (b) { b.addEventListener('click', function () { closeDrawer('#admin-editor'); }); });
+  $('#admin-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var f = e.target, msg = $('#admin-msg'), btn = $('#admin-save');
+    var role = ($('input[name="role"]:checked', f) || {}).value || 'admin';
+    var payload;
+    if (!f.name.value.trim()) { msg.textContent = 'Enter a name.'; return; }
+    if (editingAdmin) {
+      payload = { id: editingAdmin.id, name: f.name.value };
+      if (!editingAdmin.isOwner && !(me && editingAdmin.id === me.id) && role !== editingAdmin.role) payload.role = role;
+      if (f.password.value) payload.password = f.password.value;
+    } else {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.value.trim())) { msg.textContent = 'Enter a valid email address.'; return; }
+      payload = { name: f.name.value, email: f.email.value, password: f.password.value, role: role };
+    }
+    if (payload.password !== undefined && payload.password.length < 10) { msg.textContent = 'Passwords need at least 10 characters.'; return; }
+    btn.disabled = true; msg.textContent = '';
+    api('/api/admin/users', { method: editingAdmin ? 'PATCH' : 'POST', json: payload }).then(function (d) {
+      toast(editingAdmin ? 'Saved.' : d.admin.name + ' can now sign in at /admin.');
+      if (me && editingAdmin && editingAdmin.id === me.id) setMe(Object.assign({}, me, { name: d.admin.name }));
+      closeDrawer('#admin-editor'); loadTeam();
+    }).catch(function (err) { msg.textContent = err.message; })
+      .then(function () { btn.disabled = false; });
+  });
+
+  /* ---------- My account ---------- */
+  $('#me-btn').addEventListener('click', function () {
+    var f = $('#me-form');
+    f.reset();
+    $('#me-msg').textContent = '';
+    $('#me-email').textContent = 'Signed in as ' + me.email + (me.role === 'super' ? ' · Super admin' : ' · Admin');
+    f.name.value = me.name || '';
+    $('#me-pw-block').hidden = !!me.isOwner;
+    $('#me-owner-note').hidden = !me.isOwner;
+    openDrawer('#me-editor', '[name="name"]');
+  });
+  $$('[data-close-me]').forEach(function (b) { b.addEventListener('click', function () { closeDrawer('#me-editor'); }); });
+  $('#me-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var f = e.target, msg = $('#me-msg'), btn = $('#me-save');
+    var name = f.name.value.trim();
+    if (!name) { msg.textContent = 'Enter your name.'; return; }
+    var wantsPw = !me.isOwner && (f.current.value || f.password.value);
+    if (wantsPw && !f.current.value) { msg.textContent = 'Enter your current password.'; return; }
+    if (wantsPw && f.password.value.length < 10) { msg.textContent = 'New passwords need at least 10 characters.'; return; }
+    btn.disabled = true; msg.textContent = '';
+    var steps = name !== me.name ? api('/api/auth?action=profile', { method: 'POST', json: { name: name } }) : Promise.resolve();
+    steps.then(function () {
+      if (wantsPw) return api('/api/auth?action=password', { method: 'POST', json: { current: f.current.value, password: f.password.value } });
+    }).then(function () {
+      setMe(Object.assign({}, me, { name: name }));
+      toast(wantsPw ? 'Saved. Your password is updated.' : 'Saved.');
+      closeDrawer('#me-editor');
+      if (currentView === 'team') loadTeam();
+    }).catch(function (err) { msg.textContent = err.message; })
+      .then(function () { btn.disabled = false; });
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (!$('#admin-editor').hidden) closeDrawer('#admin-editor');
+    if (!$('#me-editor').hidden) closeDrawer('#me-editor');
   });
 
   /* ---------- Start ---------- */

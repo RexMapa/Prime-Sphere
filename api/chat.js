@@ -40,7 +40,7 @@ export default route(['GET', 'POST'], async (req, res) => {
   if (req.method === 'GET') {
     const s = await auth(req, query);
     const after = Number(params.get('after')) || 0;
-    const rows = await query(`SELECT * FROM chat_messages WHERE session_id = $1 AND id > $2 ORDER BY id LIMIT 200`, [s.id, after]);
+    const rows = await query(`SELECT * FROM chat_messages WHERE session_id = $1 AND id > $2 AND sender <> 'note' ORDER BY id LIMIT 200`, [s.id, after]);
     return send(res, 200, { messages: rows.map(toMessage), status: s.status, rating: s.rating, email: s.email });
   }
 

@@ -12,3 +12,10 @@ CREATE TABLE IF NOT EXISTS stores (
 );
 CREATE TABLE IF NOT EXISTS login_attempts (ip_hash TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
 CREATE TABLE IF NOT EXISTS app_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS admins (
+  id SERIAL PRIMARY KEY, email TEXT NOT NULL UNIQUE, name TEXT NOT NULL DEFAULT '', role TEXT NOT NULL DEFAULT 'admin',
+  is_owner BOOLEAN NOT NULL DEFAULT false, active BOOLEAN NOT NULL DEFAULT true, password_hash TEXT NOT NULL DEFAULT '',
+  password_version INTEGER NOT NULL DEFAULT 1, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), last_login_at TIMESTAMPTZ
+);
+-- chat_sessions: assigned_admin_id INTEGER, assigned_name TEXT, assigned_at TIMESTAMPTZ
+-- chat_messages: admin_id INTEGER, admin_name TEXT  (sender 'note' = visible to admins only)

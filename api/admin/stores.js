@@ -18,7 +18,7 @@ function toJson(r) {
 }
 
 export default route(['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], async (req, res) => {
-  requireAdmin(req);
+  await requireAdmin(req);
   await ensureSchema();
   const { query } = db();
 

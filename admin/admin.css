@@ -375,3 +375,48 @@ p { margin: 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0.001ms !important; animation: none !important; }
 }
+
+/* ---------- Team + accounts ---------- */
+.me-btn { gap: 8px; }
+.avatar {
+  width: 24px; height: 24px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--accent-fill); color: #fff; font-size: 12px; font-weight: 700; font-family: var(--display);
+}
+.avatar--lg { width: 48px; height: 48px; font-size: 19px; }
+.team-row { grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; }
+.team-row .store-meta { gap: 2px; }
+.tag--super { color: var(--accent); border-color: rgba(30, 144, 255, 0.5); }
+.tag--plain { background: transparent; color: var(--muted); }
+.drawer-panel--narrow { width: min(480px, 100%); }
+.field-help { font-weight: 400; font-size: 12.5px; color: var(--muted); }
+.field input:disabled { opacity: 0.55; cursor: not-allowed; }
+.role-pick { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.role-pick legend { font-size: 13px; font-weight: 600; color: var(--text-2); margin-bottom: 6px; padding: 0; }
+.radio { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--line-2); flex: none; position: relative; transition: border-color 0.2s; }
+.toggle input:checked + .radio { border-color: var(--accent); }
+.toggle input:checked + .radio::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--accent); }
+.toggle input:focus-visible + .radio { outline: 2px solid var(--accent); outline-offset: 2px; }
+.toggle:has(input:checked) { border-color: rgba(30, 144, 255, 0.5); background: rgba(30, 144, 255, 0.06); }
+.toggle:has(input:disabled) { opacity: 0.55; cursor: not-allowed; }
+.pw-block { display: flex; flex-direction: column; gap: 14px; padding-top: 18px; border-top: 1px solid var(--line); }
+.pw-block h3 { font-size: 16px; }
+
+/* ---------- Chat ownership ---------- */
+.owner-tag {
+  flex: none; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+  background: var(--surface-3); color: var(--text-2); max-width: 120px; overflow: hidden; text-overflow: ellipsis;
+}
+.owner-tag--mine { background: rgba(30, 144, 255, 0.18); color: var(--accent); }
+.owner-tag--free { background: rgba(111, 211, 160, 0.14); color: var(--ok); }
+.chat-item .msg-sub .owner-tag { flex: none; }
+.thread-owner { display: inline-flex; align-items: center; gap: 6px; }
+.thread-note--claim { background: rgba(111, 211, 160, 0.06); }
+.thread-note strong { color: var(--text); }
+.t-note { font-style: italic; border: 1px dashed var(--line-2); border-radius: 999px; padding: 2px 10px; }
+.t-row--teammate .t-bubble { background: rgba(11, 102, 214, 0.35); }
+@media (max-width: 700px) {
+  .me-btn #me-name { display: none; }
+  .team-row { grid-template-columns: 40px minmax(0, 1fr); }
+  .team-row .avatar--lg { width: 40px; height: 40px; }
+  .team-row .row-actions { grid-column: 1 / -1; }
+}

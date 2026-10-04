@@ -140,9 +140,9 @@
     return el('div', { class: 'chat-row ' + (mine ? 'chat-row--me' : 'chat-row--them') }, [
       mine ? null : el('span', { class: 'chat-avatar', 'aria-hidden': 'true' }, [el('img', { src: '/assets/logo-mark.png', alt: '' })]),
       el('div', { class: 'chat-bubble' }, [
-        el('span', { class: 'sr-only', text: mine ? 'You: ' : 'PrimeSphere: ' }),
+        el('span', { class: 'sr-only', text: mine ? 'You: ' : (m.name ? m.name + ' from PrimeSphere: ' : 'PrimeSphere: ') }),
         el('span', { class: 'chat-text', text: m.body }),
-        m.createdAt ? el('time', { text: fmtTime(m.createdAt), datetime: m.createdAt }) : null
+        m.createdAt ? el('time', { text: (!mine && m.name ? m.name + ' · ' : '') + fmtTime(m.createdAt), datetime: m.createdAt }) : null
       ])
     ]);
   }

@@ -66,9 +66,32 @@ started on and their thumbs up/down rating.
 - Keep the admin open in a tab to get the sound alerts. The badge checks every 15 seconds on any admin tab.
 - To change the greeting, edit `GREETING` at the top of `chat.js`.
 
+## Admin accounts (Team)
+
+The account in `ADMIN_EMAIL` / `ADMIN_PASSWORD` is the **owner**. It always works, so you can't lock yourself out.
+Sign in with it, open **My account** (your name, top right) and set your display name, since visitors see it in the chat.
+
+Open **/admin > Team** to add more admins (name, email, password, role):
+
+- **Admin**: messages, bookings, live chat, content and stores.
+- **Super admin**: everything above, plus the Team page and taking over any chat.
+
+Disabling an admin or setting a new password for them signs them out right away. Deleting or disabling an admin puts their open chats back in Unassigned.
+Each admin can change their own name and password from **My account**.
+
+## Live chat ownership
+
+A new chat starts **Unassigned**. The first admin to select **Take this chat** (or simply reply) owns it; the visitor sees
+"Alex joined the chat" and the admin's name on each reply. Other admins can still read the chat, but they can't reply, end it or delete it.
+
+- **Mine** / **Unassigned** filters show what's yours and what still needs someone.
+- The unread badge and sound only count chats that are yours or unassigned.
+- **Release** puts a chat back in Unassigned. Super admins can **Take over** or **Unassign** any chat.
+- Takeovers and releases are logged in the thread as notes that only admins can see.
+
 ## Changing your password
 
-Change `ADMIN_PASSWORD` in Vercel and redeploy. Anyone signed in (including you) is signed out.
+Owner: change `ADMIN_PASSWORD` in Vercel and redeploy. Everyone signed in is signed out. Other admins: use **My account** in the dashboard.
 
 ## Security notes
 

@@ -30,7 +30,7 @@ function csvCell(v) {
 }
 
 export default route(['GET', 'PATCH', 'DELETE'], async (req, res) => {
-  requireAdmin(req);
+  await requireAdmin(req);
   await ensureSchema();
   const { query } = db();
   const params = new URL(req.url, 'http://x').searchParams;

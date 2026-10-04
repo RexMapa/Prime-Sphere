@@ -39,9 +39,11 @@
       <button type="button" class="tab" data-view="chat">Live chat <span class="badge" id="chat-badge" hidden>0</span></button>
       <button type="button" class="tab" data-view="content">Content</button>
       <button type="button" class="tab" data-view="stores">Stores</button>
+      <button type="button" class="tab" data-view="team" id="team-tab" hidden>Team</button>
     </nav>
     <div class="topbar-actions">
       <a href="/" target="_blank" rel="noopener" class="ghost-btn">View site</a>
+      <button type="button" class="ghost-btn me-btn" id="me-btn" aria-label="My account"><span class="avatar" id="me-avatar" aria-hidden="true"></span><span id="me-name">Account</span></button>
       <button type="button" class="ghost-btn" id="logout">Sign out</button>
     </div>
   </header>
@@ -83,13 +85,15 @@
     <div class="view-head">
       <div>
         <h1>Live chat</h1>
-        <p class="muted">Reply to visitors chatting on your website. New messages appear automatically.</p>
+        <p class="muted">Take a chat to reply. Once you take it, other admins can read it but can't reply.</p>
       </div>
       <label class="toggle toggle--inline"><input type="checkbox" id="chat-sound" checked><span class="switch" aria-hidden="true"></span><span><strong>Sound for new messages</strong></span></label>
     </div>
     <div class="toolbar">
       <div class="segments" role="group" aria-label="Show chats">
-        <button type="button" class="segment" data-chat-status="open" aria-pressed="true">Open <span class="seg-count" id="chat-open-count"></span></button>
+        <button type="button" class="segment" data-chat-status="open" aria-pressed="true">All open <span class="seg-count" id="chat-open-count"></span></button>
+        <button type="button" class="segment" data-chat-status="mine" aria-pressed="false">Mine <span class="seg-count" id="chat-mine-count"></span></button>
+        <button type="button" class="segment" data-chat-status="unassigned" aria-pressed="false">Unassigned <span class="seg-count" id="chat-unassigned-count"></span></button>
         <button type="button" class="segment" data-chat-status="closed" aria-pressed="false">Ended</button>
         <button type="button" class="segment" data-chat-status="all" aria-pressed="false">All</button>
       </div>
@@ -172,6 +176,78 @@
     </div>
     <div class="store-list" id="store-list" aria-live="polite"></div>
   </section>
+
+  <!-- Team -->
+  <section class="view" id="view-team" hidden>
+    <div class="view-head">
+      <div>
+        <h1>Team</h1>
+        <p class="muted">Admin accounts that can sign in to this dashboard. Super admins can manage accounts and take over any chat.</p>
+      </div>
+      <button type="button" class="btn" id="add-admin">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Add admin
+      </button>
+    </div>
+    <div class="store-list" id="team-list" aria-live="polite"></div>
+  </section>
+</div>
+
+<!-- ============ Admin account editor ============ -->
+<div class="drawer" id="admin-editor" hidden>
+  <div class="drawer-backdrop" data-close-admin></div>
+  <form class="drawer-panel drawer-panel--narrow" id="admin-form" novalidate role="dialog" aria-modal="true" aria-labelledby="admin-editor-title">
+    <div class="drawer-head">
+      <h2 id="admin-editor-title">Add admin</h2>
+      <button type="button" class="icon-btn" data-close-admin aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body">
+      <label class="field">Name*<input name="name" type="text" maxlength="60" required placeholder="e.g. Alex" autocomplete="off"><small class="field-help">Visitors see this name in the live chat.</small></label>
+      <label class="field">Email*<input name="email" type="email" maxlength="200" required placeholder="name@primesphere.com" autocomplete="off"></label>
+      <label class="field"><span id="admin-pw-label">Password*</span><input name="password" type="password" minlength="10" maxlength="200" autocomplete="new-password" placeholder="At least 10 characters"><small class="field-help" id="admin-pw-help">Share it with them privately. They can change it after signing in.</small></label>
+      <fieldset class="role-pick">
+        <legend>Role</legend>
+        <label class="toggle"><input type="radio" name="role" value="admin" checked><span class="radio" aria-hidden="true"></span><span><strong>Admin</strong><small>Messages, bookings, live chat, content and stores.</small></span></label>
+        <label class="toggle"><input type="radio" name="role" value="super"><span class="radio" aria-hidden="true"></span><span><strong>Super admin</strong><small>Everything an admin can do, plus manage accounts and take over chats.</small></span></label>
+      </fieldset>
+      <p class="form-msg" id="admin-msg" role="alert"></p>
+    </div>
+    <div class="drawer-foot">
+      <button type="button" class="ghost-btn" data-close-admin>Cancel</button>
+      <button type="submit" class="btn" id="admin-save">Create admin</button>
+    </div>
+  </form>
+</div>
+
+<!-- ============ My account ============ -->
+<div class="drawer" id="me-editor" hidden>
+  <div class="drawer-backdrop" data-close-me></div>
+  <form class="drawer-panel drawer-panel--narrow" id="me-form" novalidate role="dialog" aria-modal="true" aria-labelledby="me-editor-title">
+    <div class="drawer-head">
+      <h2 id="me-editor-title">My account</h2>
+      <button type="button" class="icon-btn" data-close-me aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body">
+      <p class="muted" id="me-email"></p>
+      <label class="field">Display name<input name="name" type="text" maxlength="60" required><small class="field-help">Visitors see this name in the live chat.</small></label>
+      <div class="pw-block" id="me-pw-block">
+        <h3>Change password</h3>
+        <label class="field">Current password<input name="current" type="password" autocomplete="current-password"></label>
+        <label class="field">New password<input name="password" type="password" minlength="10" autocomplete="new-password" placeholder="At least 10 characters"></label>
+        <p class="muted" style="font-size:13px">Changing your password signs you out on your other devices.</p>
+      </div>
+      <p class="muted" id="me-owner-note" hidden>You're signed in as the owner. Your password is set by ADMIN_PASSWORD in Vercel.</p>
+      <p class="form-msg" id="me-msg" role="alert"></p>
+    </div>
+    <div class="drawer-foot">
+      <button type="button" class="ghost-btn" data-close-me>Cancel</button>
+      <button type="submit" class="btn" id="me-save">Save</button>
+    </div>
+  </form>
 </div>
 
 <!-- ============ Store editor ============ -->
