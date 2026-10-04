@@ -195,6 +195,7 @@
 
     function buildMarquee() {
       track.innerHTML = '';
+      if (!originals.length) return; // nothing to scroll (avoids an endless loop)
       // 1. Fill one group until it is at least as wide as the screen
       var group = document.createDocumentFragment();
       var groupEls = [];
