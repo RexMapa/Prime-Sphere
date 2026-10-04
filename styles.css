@@ -259,6 +259,21 @@ p { margin: 0; }
   border: 2px solid var(--accent); z-index: -1; border-radius: 4px;
 }
 
+.portrait--photo { padding: 0; display: block; background: var(--surface); border-color: var(--line-2); box-shadow: 0 30px 60px -24px rgba(0, 0, 0, 0.7), 0 0 80px -30px rgba(30, 144, 255, 0.45); }
+.portrait--photo img {
+  display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 20%; border-radius: 3px;
+  filter: saturate(0.92) contrast(1.04) brightness(0.94);
+}
+/* Cool blue grade + bottom fade so the warm photo sits inside the dark theme */
+.portrait-shade {
+  position: absolute; inset: 0; border-radius: 3px; pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(5, 11, 24, 0) 55%, rgba(5, 11, 24, 0.75) 100%),
+    linear-gradient(135deg, rgba(30, 144, 255, 0.18), rgba(5, 11, 24, 0) 55%);
+  mix-blend-mode: normal; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+@media (max-width: 600px) { .portrait--photo { flex: 1 1 100%; max-width: 360px; height: 440px; margin: 0 16px 16px 0; } }
+
 /* ---------- Placeholders ---------- */
 .ph {
   background: var(--surface) repeating-linear-gradient(135deg, rgba(0,134,252,0.05) 0 2px, transparent 2px 22px);
