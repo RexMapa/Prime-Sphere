@@ -4,6 +4,7 @@
 import { db, ensureSchema } from '../lib/db.js';
 import { route, send, HttpError } from '../lib/http.js';
 import { getPromo } from '../lib/promo.js';
+import { getWork } from '../lib/work.js';
 
 const CACHE = { 'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=30' };
 
@@ -24,7 +25,8 @@ export default route(['GET'], async (req, res) => {
   }
 
   const rows = await query(`SELECT id, type, data FROM content_items WHERE published ORDER BY type, sort_order, id`);
-  const out = { project: [], service: [], testimonial: [], client: [], post: [] };
+  const out = { project: [], service: [], testimonial: [], client: [], post: [], case: [] };
+  out.work = await getWork(query);
   rows.forEach((r) => {
     if (!out[r.type]) return;
     const item = { id: r.id, ...r.data };

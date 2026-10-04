@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800" font-family="Sora, 'Segoe UI', Arial, sans-serif">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22E3A0"/><stop offset="1" stop-color="#1E90FF"/></linearGradient>
+<radialGradient id="glow" cx="50%" cy="0%" r="70%"><stop offset="0" stop-color="#E08A4A" stop-opacity=".28"/><stop offset="1" stop-color="#E08A4A" stop-opacity="0"/></radialGradient></defs>
+<rect width="1200" height="800" fill="#050B18"/><rect width="1200" height="800" fill="url(#glow)"/>
+<text x="80" y="110" font-size="15" letter-spacing="4" fill="#E08A4A">GOOGLE ADS  |  PERTH</text><text x="80" y="190" font-size="56" font-weight="800" fill="#EEF3FB">Aglow Aesthetics</text><text x="80" y="240" font-size="24" fill="#B6C2D6">Engineering intent without backend tracking</text><text x="80" y="420" font-size="120" font-weight="800" fill="url(#g)">1,389</text><text x="80" y="470" font-size="24" fill="#B6C2D6">qualified clicks on a lean A$20 daily budget</text><rect x="80" y="580" width="330" height="120" rx="14" fill="#0B1730" stroke="#ffffff" stroke-opacity=".09"/>
+<text x="104" y="640" font-size="38" font-weight="800" fill="#EEF3FB">7.69%</text>
+<text x="104" y="672" font-size="16" fill="#8A99B2">Search CTR</text><rect x="435" y="580" width="330" height="120" rx="14" fill="#0B1730" stroke="#ffffff" stroke-opacity=".09"/>
+<text x="459" y="640" font-size="38" font-weight="800" fill="#EEF3FB">A$1.19</text>
+<text x="459" y="672" font-size="16" fill="#8A99B2">Avg. CPC</text><rect x="790" y="580" width="330" height="120" rx="14" fill="#0B1730" stroke="#ffffff" stroke-opacity=".09"/>
+<text x="814" y="640" font-size="38" font-weight="800" fill="#EEF3FB">A$20</text>
+<text x="814" y="672" font-size="16" fill="#8A99B2">Daily budget</text><text x="80" y="745" font-size="15" fill="#8A99B2">Prime Sphere  |  Case study</text>
+</svg>

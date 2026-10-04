@@ -3,18 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Blog | PrimeSphere</title>
-<meta name="description" content="Insights, playbooks and lessons from the PrimeSphere team.">
+<title>Our Work | PrimeSphere</title>
+<meta name="description" content="Case studies and projects from PrimeSphere: real campaigns, stores and brands with the numbers behind them.">
 <meta name="theme-color" content="#050B18">
-<meta property="og:title" content="PrimeSphere | Global Opportunities, Real Results">
+<meta property="og:title" content="Our Work | PrimeSphere">
 <meta property="og:description" content="Design, development and digital marketing that delivers measurable results.">
-<meta property="og:image" content="assets/logo-full.png">
-<link rel="icon" type="image/png" href="assets/icon.png">
-<link rel="apple-touch-icon" href="assets/icon.png">
+<meta property="og:image" content="/assets/logo-full.png">
+<link rel="icon" type="image/png" href="/assets/icon.png">
+<link rel="apple-touch-icon" href="/assets/icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="/styles.css">
 <script>document.documentElement.classList.remove('no-js');</script>
 </head>
 <body>
@@ -25,12 +25,12 @@
 <header class="header" id="header">
   <nav class="wrap nav" aria-label="Main">
     <a href="/" class="brand" aria-label="PrimeSphere home">
-      <img src="assets/logo-mark.png" alt="" width="82" height="40">
+      <img src="/assets/logo-mark.png" alt="" width="82" height="40">
       <span>PRIME<b>SPHERE</b></span>
     </a>
     <ul class="nav-links" id="nav-links">
       <li><a href="/">Home</a></li>
-      <li><a href="/about">About</a></li>
+      <li><a href="/about" >About</a></li>
       <li class="nav-dd">
         <div class="nav-dd-head">
           <a href="/services">Services</a>
@@ -50,7 +50,7 @@
           <a href="/services" class="nav-dd-all">View all services <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg></a>
         </div>
       </li>
-      <li><a href="/work">Work</a></li>
+      <li><a href="/work" class="is-active" aria-current="page">Work</a></li>
       <li><a href="/stores">Stores</a></li>
       <li><a href="/#process">Process</a></li>
       <li><a href="/#insights">Insights</a></li>
@@ -66,34 +66,112 @@
   </nav>
 </header>
 
-<main id="main">
+<main id="main" data-work-page>
 
+<!-- ============ HERO ============ -->
 <section class="page-hero">
   <div class="wrap">
-    <a href="/#insights" class="back-link fade-in" style="--d:.1s"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg><span id="back-label">Back to home</span></a>
-    <h1 id="blog-heading">
-      <span class="line"><span>Insights and</span></span>
-      <span class="line"><span class="hl">Recent Posts.</span></span>
+    <a href="/" class="back-link fade-in" style="--d:.1s"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back to home</a>
+    <h1>
+      <span class="line"><span data-w="heroLine1">Work that moves</span></span>
+      <span class="line"><span class="hl" data-w="heroLine2">the needle.</span></span>
     </h1>
-    <p class="lede fade-in" style="--d:.45s" id="blog-lede">Ideas, playbooks and lessons from the projects we work on.</p>
+    <p class="lede fade-in" style="--d:.45s" data-w="heroText">A look at the campaigns, stores and brands we have helped launch and grow, with the real numbers behind them.</p>
   </div>
 </section>
 
-<section class="section blog-page">
+<!-- ============ NUMBERS ============ -->
+<section class="work-stats" aria-label="Results at a glance">
+  <div class="wrap work-stats-grid" data-w-stats>
+    <div><b>A$19,991</b><span>Revenue tracked from ads</span></div>
+    <div><b>10.9x</b><span>Best return on ad spend</span></div>
+    <div><b>1,389</b><span>Qualified clicks driven</span></div>
+    <div><b>7.69%</b><span>Search click-through rate</span></div>
+  </div>
+</section>
+
+<!-- ============ CASE STUDIES ============ -->
+<section class="section" id="cases">
   <div class="wrap">
-    <div class="blog-grid" id="blog-grid" aria-live="polite"><p class="lede">Loading posts</p></div>
-    <article class="article" id="article" hidden></article>
+    <div class="sec-head">
+      <span class="eyebrow" data-w="casesEyebrow">Case studies</span>
+      <h2 data-w="casesTitle">Real results for aesthetic clinics</h2>
+      <p class="lede" data-w="casesText">Two Google Ads campaigns, two different challenges, both built around what matters: profit and intent.</p>
+    </div>
+    <div class="case-grid" data-content="case"></div>
+    <p class="case-note" data-w="casesNote">Lumière IV figures exclude mobile travel fees and repeat-client lifetime value.</p>
   </div>
 </section>
 
-<section class="section section--alt stores-cta">
-  <div class="wrap stores-cta-inner">
-    <h2 class="reveal">Want results like these <span class="hl">for your brand?</span></h2>
-    <p class="lede reveal" style="--d:.08s">Tell us about your store or project and we will come back with a plan.</p>
-    <a href="/contact" class="btn reveal" style="--d:.16s">Start a Project <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg></a>
+<!-- ============ PROJECTS ============ -->
+<section class="section section--alt" id="projects">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow" data-w="projectsEyebrow">Projects</span>
+      <h2 data-w="projectsTitle">Brands, stores and campaigns</h2>
+      <p class="lede" data-w="projectsText">Click any project to see it up close.</p>
+    </div>
+    <div class="project-grid" data-content="projectgrid"></div>
   </div>
 </section>
+
+<!-- ============ TESTIMONIALS ============ -->
+<section class="section" id="testimonials" style="padding-top:40px" hidden>
+  <div class="wrap testi-grid">
+    <div class="testi-main">
+      <div class="ghost-word reveal" aria-hidden="true">TESTIMONIAL</div>
+      <div class="quotes" aria-live="polite" data-content="testimonial"></div>
+    </div>
+    <div class="testi-side">
+      <span class="eyebrow reveal">Testimonial</span>
+      <h2 class="reveal" style="--d:.08s">Clients<br>Testimonials</h2>
+      <div class="testi-controls reveal" style="--d:.16s">
+        <button type="button" data-testi="prev" aria-label="Previous testimonial"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <button type="button" data-testi="next" aria-label="Next testimonial"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CLIENTS ============ -->
+<section class="clients" aria-label="Clients" hidden>
+  <p class="reveal">Trusted by <span class="hl">brands around the world</span></p>
+  <div class="marquee"><div class="marquee-track" data-content="client"></div></div>
+</section>
+
+<!-- ============ CTA ============ -->
+<section class="work-band">
+  <div class="wrap work-band-inner">
+    <div>
+      <h2 data-w="ctaTitle">Let's build your next success story</h2>
+      <p data-w="ctaText">Tell us about your goals and we will show you what is possible.</p>
+    </div>
+    <a href="/contact" class="btn" data-w-href="ctaLink"><span data-w="ctaButton">Start a project</span> <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg></a>
+  </div>
+</section>
+
 </main>
+
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-labelledby="lightbox-title" hidden>
+  <div class="lightbox-backdrop" data-close></div>
+  <div class="lightbox-panel">
+    <div class="lightbox-bar">
+      <span class="lightbox-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+      <h3 id="lightbox-title">Store</h3>
+      <div class="lightbox-actions">
+        <a href="#" target="_blank" rel="noopener" class="lightbox-visit">Visit store <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg></a>
+        <button type="button" class="lightbox-btn" data-nav="-1" aria-label="Previous store"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <button type="button" class="lightbox-btn" data-nav="1" aria-label="Next store"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+        <button type="button" class="lightbox-btn" data-close aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      </div>
+    </div>
+    <div class="lightbox-tabs" role="tablist" aria-label="Store pages"></div>
+    <div class="lightbox-scroll" tabindex="0">
+      <img src="" alt="">
+    </div>
+  </div>
+</div>
+
 
 <!-- ============ NEWSLETTER ============ -->
 <section class="newsletter" aria-labelledby="nl-title">
@@ -119,11 +197,11 @@
 <footer class="footer">
   <div class="wrap footer-inner">
     <div class="footer-brand">
-      <img src="assets/logo-mark.png" alt="" width="58" height="28">
+      <img src="/assets/logo-mark.png" alt="" width="58" height="28">
       <span>© <span id="year">2026</span> PrimeSphere. Global opportunities, real results.</span>
     </div>
     <ul class="footer-links">
-      <li><a href="/#top">Home</a></li><li><a href="/about">About</a></li><li><a href="/services">Services</a></li><li><a href="/work">Work</a></li>
+      <li><a href="/#top">Home</a></li><li><a href="/about">About</a></li><li><a href="/services">Services</a></li><li><a href="/#work">Work</a></li>
       <li><a href="/blog">Blog</a></li><li><a href="/#contact">Contact</a></li>
     </ul>
   </div>
@@ -133,8 +211,7 @@
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
 </button>
 
-<script src="script.js" defer></script>
-<script src="chat.js" defer></script>
-<script src="blog.js" defer></script>
+<script src="/script.js" defer></script>
+<script src="/chat.js" defer></script>
 </body>
 </html>

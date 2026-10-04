@@ -738,10 +738,27 @@
       fields: [
         { key: 'title', label: 'Project title*', type: 'text', max: 120, required: true, placeholder: 'e.g. Creative Logo Design' },
         { key: 'tags', label: 'Categories', type: 'text', max: 120, placeholder: 'e.g. Branding, Identity' },
-        { key: 'image', label: 'Image', type: 'image', hint: 'Landscape works best, about 1200 x 800.' },
-        { key: 'url', label: 'Link (optional)', type: 'url', placeholder: 'https://' }
+        { key: 'image', label: 'Cover image (tab: Overview)', type: 'image', hint: 'Landscape works best, about 1200 x 800. Visitors can click it to zoom in.' },
+        { key: 'image2', label: 'Second image (tab: Results, optional)', type: 'image', hint: 'Tall images are fine. They scroll inside the zoomed view.' },
+        { key: 'image3', label: 'Third image (tab: Details, optional)', type: 'image' },
+        { key: 'url', label: 'Link (optional)', type: 'url', placeholder: 'https://', hint: 'Adds a Visit button in the zoomed view.' }
       ],
       title: function (d) { return d.title; }, sub: function (d) { return d.tags; }, image: function (d) { return d.image; }
+    },
+    case: {
+      label: 'case study', plural: 'Case studies', help: 'The result cards on the Work page. Two side by side looks best.',
+      fields: [
+        { key: 'name', label: 'Client or case study name*', type: 'text', max: 80, required: true, placeholder: 'e.g. Lumière IV' },
+        { key: 'tag', label: 'Small label', type: 'text', max: 40, placeholder: 'e.g. Revenue-first' },
+        { key: 'subtitle', label: 'Short description', type: 'text', max: 120, placeholder: 'e.g. Scaling beyond the dashboard' },
+        { key: 'big', label: 'Big number*', type: 'text', max: 20, required: true, placeholder: 'e.g. 10.9x' },
+        { key: 'bigCaption', label: 'Big number caption', type: 'text', max: 140, placeholder: 'e.g. ROAS. 8.2x true marketing ROI.' },
+        { key: 'barLeft', label: 'Progress bar, left label', type: 'text', max: 60, placeholder: 'e.g. A$1,820 ad spend' },
+        { key: 'barRight', label: 'Progress bar, right label', type: 'text', max: 60, placeholder: 'e.g. A$19,991 revenue' },
+        { key: 'barPercent', label: 'Progress bar fill (0 to 100)', type: 'text', max: 3, placeholder: '100', hint: 'Leave empty or 0 to hide the bar.' },
+        { key: 'stats', label: 'Three small stats', type: 'list', hint: 'One per line as Number | Label, up to 3.', placeholder: '56 | New paying clients\nA$18,171 | Gross marketing profit\n4.5 mo | Campaign length' }
+      ],
+      title: function (d) { return d.name; }, sub: function (d) { return d.big + (d.subtitle ? ' | ' + d.subtitle : ''); }, image: function () { return ''; }
     },
     service: {
       label: 'service', plural: 'Services', help: 'Cards in the "Smart Development" section.',
@@ -788,12 +805,14 @@
   var ct = { type: 'project', items: [], editing: null };
 
   function loadContent(silent) {
-    var isPromo = ct.type === 'promo';
-    var isSettings = ct.type === 'booking' || isPromo;
+    var isPromo = ct.type === 'promo', isWork = ct.type === 'work';
+    var isSettings = ct.type === 'booking' || isPromo || isWork;
     if (silent && isSettings) return; // never overwrite the settings form while someone may be editing it
     $('#content-list').hidden = isSettings;
     $('#booking-settings').hidden = ct.type !== 'booking';
     $('#promo-settings').hidden = !isPromo;
+    $('#work-settings').hidden = !isWork;
+    if (isWork) { $('#content-help').textContent = 'Headings, numbers and button on the Work page. Projects, testimonials and logos are edited in their own tabs.'; return loadWorkSettings(); }
     $('#content-add').hidden = isSettings;
     if (isPromo) { $('#content-help').textContent = 'The countdown timer and discount banner on the homepage.'; return loadPromoSettings(); }
     if (isSettings) { $('#content-help').textContent = 'When people can book calls from the contact page.'; return loadBookingSettings(); }
@@ -1072,6 +1091,56 @@
     api('/api/admin/content?settings=promo', { method: 'PUT', json: payload }).then(function (d) {
       pset = d.promo; renderPromoSettings(); toast('Countdown saved.');
     }).catch(function (err) { msg.textContent = err.message; btn.disabled = false; btn.textContent = 'Save countdown'; });
+  });
+
+
+  /* ---------- Work page text ---------- */
+  var wset = null;
+  var WORK_GROUPS = [
+    ['Top of the page', [['heroLine1', 'Headline, first line', 60], ['heroLine2', 'Headline, second line (blue)', 60], ['heroText', 'Intro text', 300, 'area']]],
+    ['Case studies section', [['casesEyebrow', 'Small label', 40], ['casesTitle', 'Heading', 100], ['casesText', 'Intro text', 240, 'area'], ['casesNote', 'Footnote under the cards', 240]]],
+    ['Projects section', [['projectsEyebrow', 'Small label', 40], ['projectsTitle', 'Heading', 100], ['projectsText', 'Intro text', 240, 'area']]],
+    ['Bottom banner', [['ctaTitle', 'Heading', 100], ['ctaText', 'Text', 240, 'area'], ['ctaButton', 'Button text', 30], ['ctaLink', 'Button link', 500]]]
+  ];
+  function loadWorkSettings() {
+    var f = $('#work-settings');
+    f.replaceChildren(el('p', { class: 'muted', text: 'Loading settings' }));
+    return api('/api/admin/content?settings=work').then(function (d) { wset = d.work; renderWorkSettings(); })
+      .catch(function (err) { f.replaceChildren(el('p', { class: 'form-msg', text: err.message })); });
+  }
+  function renderWorkSettings() {
+    var f = $('#work-settings'), parts = [];
+    var field = function (k, label, max, kind) {
+      var inp = kind === 'area' ? el('textarea', { name: k, maxlength: String(max) }) : el('input', { type: 'text', name: k, maxlength: String(max), value: wset[k] || '' });
+      if (kind === 'area') inp.value = wset[k] || '';
+      return el('label', { class: 'field' }, [label, inp]);
+    };
+    WORK_GROUPS.forEach(function (g, gi) {
+      parts.push(el('h3', { text: g[0], style: 'margin:18px 0 0' }));
+      g[1].forEach(function (x) { parts.push(field(x[0], x[1], x[2], x[3])); });
+      if (gi === 0) {
+        parts.push(el('h3', { text: 'Numbers strip (up to 4)', style: 'margin:18px 0 0' }));
+        for (var i = 0; i < 4; i++) {
+          var st = (wset.stats || [])[i] || { value: '', label: '' };
+          parts.push(el('div', { class: 'row-3' }, [
+            el('label', { class: 'field' }, ['Number ' + (i + 1), el('input', { type: 'text', name: 'sv' + i, maxlength: '20', value: st.value })]),
+            el('label', { class: 'field' }, ['Label ' + (i + 1), el('input', { type: 'text', name: 'sl' + i, maxlength: '60', value: st.label })])
+          ]));
+        }
+      }
+    });
+    parts.push(el('div', { class: 'settings-foot' }, [el('p', { class: 'form-msg', role: 'alert' }), el('button', { type: 'submit', class: 'btn', text: 'Save Work page text' })]));
+    f.replaceChildren.apply(f, parts);
+  }
+  $('#work-settings').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var f = e.target, msg = $('.form-msg', f), btn = $('button[type="submit"]', f), payload = { stats: [] };
+    WORK_GROUPS.forEach(function (g) { g[1].forEach(function (x) { payload[x[0]] = f[x[0]].value; }); });
+    for (var i = 0; i < 4; i++) payload.stats.push({ value: f['sv' + i].value, label: f['sl' + i].value });
+    msg.textContent = ''; btn.disabled = true; btn.textContent = 'Saving';
+    api('/api/admin/content?settings=work', { method: 'PUT', json: payload }).then(function (d) {
+      wset = d.work; renderWorkSettings(); toast('Work page text saved.');
+    }).catch(function (err) { msg.textContent = err.message; btn.disabled = false; btn.textContent = 'Save Work page text'; });
   });
 
   /* =========================================================

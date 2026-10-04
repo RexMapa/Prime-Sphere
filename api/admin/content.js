@@ -12,6 +12,7 @@ import { requireAdmin } from '../../lib/auth.js';
 import { validate, IMAGE_FIELDS, TYPES } from '../../lib/content.js';
 import { getBooking, cleanSettings } from '../../lib/booking.js';
 import { getPromo, cleanPromo } from '../../lib/promo.js';
+import { getWork, cleanWork } from '../../lib/work.js';
 import { removeBlobs } from '../../lib/blob.js';
 
 const toJson = (r) => ({ id: r.id, type: r.type, data: r.data, published: r.published, sortOrder: r.sort_order, updatedAt: r.updated_at });
@@ -22,10 +23,12 @@ export default route(['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], async (req, res)
   await ensureSchema();
   const { query } = db();
   const params = new URL(req.url, 'http://x').searchParams;
+  const isWork = params.get('settings') === 'work';
   const isPromo = params.get('settings') === 'promo';
   const isSettings = params.get('settings') === 'booking';
 
   if (req.method === 'GET') {
+    if (isWork) return send(res, 200, { work: await getWork(query) });
     if (isPromo) return send(res, 200, { promo: await getPromo(query) });
     if (isSettings) return send(res, 200, { booking: await getBooking(query) });
     const type = params.get('type');
@@ -45,6 +48,12 @@ export default route(['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], async (req, res)
   }
 
   const body = await readJson(req);
+
+  if (isWork && req.method === 'PUT') {
+    const value = cleanWork(body);
+    await query(`INSERT INTO settings (key, value) VALUES ('work', $1::jsonb) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`, [JSON.stringify(value)]);
+    return send(res, 200, { work: value });
+  }
 
   if (isPromo && req.method === 'PUT') {
     const value = cleanPromo(body);
