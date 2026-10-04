@@ -1115,3 +1115,36 @@ img.avatar { object-fit: cover; }
   .brand span { font-size: 18px; }
   .brand img { height: 34px; }
 }
+
+/* ---------- Newsletter ---------- */
+.newsletter { position: relative; padding: 72px 0; border-top: 1px solid var(--line); overflow: hidden;
+  background: radial-gradient(ellipse 60% 120% at 100% 0%, rgba(30, 144, 255, 0.14), transparent 60%), var(--bg-2); }
+.newsletter-inner { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 48px; align-items: center; }
+.newsletter-copy { display: flex; flex-direction: column; gap: 14px; }
+.newsletter-copy h2 { font-size: clamp(26px, 3vw, 36px); }
+.newsletter-copy p { color: var(--text-2); max-width: 52ch; }
+.newsletter-form { position: relative; display: flex; flex-direction: column; gap: 10px; }
+.newsletter-row { display: flex; gap: 10px; }
+.newsletter-row input {
+  flex: 1; min-width: 0; min-height: 52px; padding: 12px 16px; border-radius: 4px; border: 1px solid var(--line-2);
+  background: rgba(255, 255, 255, 0.04); color: var(--text); font-size: 15px; transition: border-color 0.2s, background 0.2s;
+}
+.newsletter-row input::placeholder { color: #66758F; }
+.newsletter-row input:focus { outline: none; border-color: var(--accent); background: rgba(255, 255, 255, 0.06); }
+.newsletter-row input[aria-invalid="true"] { border-color: #FF8A6B; }
+.newsletter-row .btn { min-height: 52px; flex: none; }
+.newsletter-row .btn:disabled { opacity: 0.7; cursor: default; }
+.newsletter-status { min-height: 22px; font-size: 14px; font-weight: 600; color: var(--text-2); }
+.newsletter-status.is-ok { color: #6FD3A0; }
+.newsletter-status.is-err { color: #FF8A6B; }
+.newsletter-note { font-size: 12.5px; color: var(--muted); }
+.newsletter-form.is-done .newsletter-row { display: none; }
+@media (max-width: 860px) { .newsletter-inner { grid-template-columns: 1fr; gap: 28px; } }
+@media (max-width: 480px) { .newsletter-row { flex-direction: column; } .newsletter-row .btn { justify-content: center; } }
+
+/* ---------- Unsubscribe page ---------- */
+.unsub-card { max-width: 560px; display: flex; flex-direction: column; gap: 18px; align-items: flex-start;
+  padding: 32px; border: 1px solid var(--line); background: var(--bg-2); }
+.unsub-card p { color: var(--text-2); }
+.unsub-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.unsub-card .newsletter-status:empty { display: none; }

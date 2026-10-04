@@ -37,12 +37,13 @@
       <button type="button" class="tab" data-view="messages" aria-current="page">Messages <span class="badge" id="new-badge" hidden>0</span></button>
       <button type="button" class="tab" data-view="bookings">Bookings <span class="badge" id="booking-badge" hidden>0</span></button>
       <button type="button" class="tab" data-view="chat">Live chat <span class="badge" id="chat-badge" hidden>0</span></button>
+      <button type="button" class="tab" data-view="subscribers">Subscribers <span class="badge" id="sub-badge" hidden>0</span></button>
       <button type="button" class="tab" data-view="content">Content</button>
       <button type="button" class="tab" data-view="stores">Stores</button>
       <button type="button" class="tab" data-view="team" id="team-tab" hidden>Team</button>
     </nav>
     <div class="topbar-actions">
-      <a href="/" target="_blank" rel="noopener" class="ghost-btn">View site</a>
+      <a href="/" target="_blank" rel="noopener" class="ghost-btn view-site" aria-label="View site (opens in a new tab)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg><span class="btn-label">View site</span></a>
       <button type="button" class="ghost-btn me-btn" id="me-btn" aria-label="My account"><span class="avatar" id="me-avatar" aria-hidden="true"></span><span id="me-name">Account</span></button>
       <button type="button" class="ghost-btn" id="logout">Sign out</button>
     </div>
@@ -175,6 +176,31 @@
       </button>
     </div>
     <div class="store-list" id="store-list" aria-live="polite"></div>
+  </section>
+
+  <!-- Subscribers -->
+  <section class="view" id="view-subscribers" hidden>
+    <div class="view-head">
+      <div>
+        <h1>Newsletter subscribers</h1>
+        <p class="muted" id="sub-summary">People who signed up with the newsletter form at the bottom of every page.</p>
+      </div>
+      <a class="ghost-btn" id="sub-export" href="/api/newsletter?status=subscribed&amp;format=csv">Export CSV</a>
+    </div>
+    <div class="sub-stats" id="sub-stats"></div>
+    <div class="toolbar">
+      <div class="segments" role="group" aria-label="Show subscribers">
+        <button type="button" class="segment" data-sub-status="subscribed" aria-pressed="true">Subscribed <span class="seg-count" id="sub-count-subscribed"></span></button>
+        <button type="button" class="segment" data-sub-status="unsubscribed" aria-pressed="false">Unsubscribed <span class="seg-count" id="sub-count-unsubscribed"></span></button>
+        <button type="button" class="segment" data-sub-status="all" aria-pressed="false">All</button>
+      </div>
+      <label class="search"><span class="sr-only">Search subscribers</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="search" id="sub-search" placeholder="Search email">
+      </label>
+    </div>
+    <div class="sub-list" id="sub-list" aria-live="polite"></div>
+    <p class="muted sub-help">Export the list as CSV to send campaigns from your email tool (Klaviyo, Mailchimp, Shopify Email and others). Each row includes a personal unsubscribe link; put it in your emails so people can leave the list, and they will show as Unsubscribed here.</p>
   </section>
 
   <!-- Team -->

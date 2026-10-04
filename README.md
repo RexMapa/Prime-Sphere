@@ -89,6 +89,23 @@ A new chat starts **Unassigned**. The first admin to select **Take this chat** (
 - **Release** puts a chat back in Unassigned. Super admins can **Take over** or **Unassign** any chat.
 - Takeovers and releases are logged in the thread as notes that only admins can see.
 
+## Newsletter
+
+Every public page has a newsletter sign-up above the footer. Sign-ups go to **/admin > Subscribers**, where you can search,
+see which page people signed up on, unsubscribe or delete someone, and **Export CSV**.
+
+The site stores the list; it doesn't send emails itself. To send a newsletter, export the CSV and import it into your email tool
+(Klaviyo, Mailchimp, Shopify Email and so on). Each row has a personal `unsubscribe_url`
+(`yoursite.com/unsubscribe?token=...`). If you use it in your emails, people who click it show as Unsubscribed here.
+Before each send, export again so people who unsubscribed are left out.
+
+- Signing up twice is harmless ("You're already subscribed"); someone who unsubscribed and signs up again is resubscribed.
+- Spam protection: a hidden trap field, and at most 5 sign-ups per connection per 10 minutes.
+- The unsubscribe page asks for a click to confirm, so email security scanners that open links can't unsubscribe people by accident.
+
+**Function limit:** Vercel's free Hobby plan allows 12 functions per deployment. The site now uses exactly 12 (`/api` has 12 files).
+If you add another API file later, upgrade to Pro or merge it into an existing route.
+
 ## Live updates (no refresh needed)
 
 Everything updates on its own while the page is open:

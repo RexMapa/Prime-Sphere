@@ -420,3 +420,48 @@ p { margin: 0; }
   .team-row .avatar--lg { width: 40px; height: 40px; }
   .team-row .row-actions { grid-column: 1 / -1; }
 }
+
+/* ---------- Subscribers ---------- */
+.sub-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+.sub-stat { display: flex; flex-direction: column; gap: 2px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-2); }
+.sub-stat strong { font-family: var(--display); font-size: 26px; }
+.sub-stat span { font-size: 13px; color: var(--muted); }
+.sub-list { border: 1px solid var(--line); border-radius: 10px; background: var(--bg-2); overflow: hidden; }
+.sub-row {
+  display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr) minmax(0, 1fr) 120px 170px; gap: 14px; align-items: center;
+  padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: 14px;
+}
+.sub-row:last-child { border-bottom: 0; }
+.sub-row--head { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; padding-block: 10px; }
+.sub-row.is-off .sub-email { color: var(--muted); }
+.sub-email { color: var(--text); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sub-email:hover { color: var(--accent); }
+.sub-date, .sub-src { color: var(--text-2); font-size: 13px; }
+.tag--ok { border-color: rgba(111, 211, 160, 0.5); color: var(--ok); }
+.ghost-btn--sm { min-height: 36px; padding: 6px 12px; font-size: 13px; }
+.sub-help { margin-top: 14px; font-size: 13px; max-width: 80ch; }
+@media (max-width: 760px) {
+  .sub-stats { grid-template-columns: 1fr 1fr 1fr; }
+  .sub-stat strong { font-size: 20px; }
+  .sub-row--head { display: none; }
+  .sub-row { grid-template-columns: minmax(0, 1fr) auto; row-gap: 4px; }
+  .sub-row .sub-email { grid-column: 1 / -1; }
+  .sub-row .sub-src { display: none; }
+}
+.sub-row--head > span { text-align: left; justify-self: start; }
+.view-site { gap: 6px; }
+/* 8 tabs: tighten the top bar before anything has to scroll */
+@media (max-width: 1440px) {
+  .topbar { gap: 14px; padding-inline: 18px; }
+  .tabs { gap: 0; }
+  .tab { padding: 8px 10px; }
+  .tab[aria-current="page"]::after { left: 10px; right: 10px; }
+}
+@media (max-width: 1340px) {
+  .view-site .btn-label { display: none; }
+  .view-site { padding-inline: 10px; }
+  .me-btn #me-name { display: none; }
+  .brand em { display: none; }
+}
+.sub-row > * { text-align: left; justify-self: start; min-width: 0; }
+.sub-row > .row-actions { justify-self: end; }

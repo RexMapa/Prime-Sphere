@@ -559,6 +559,50 @@
     document.addEventListener('visibilitychange', liveUpdate);
   }
 
+  /* ---------- Newsletter sign-up (every page) ---------- */
+  $$('[data-newsletter]').forEach(function (form) {
+    var input = $('input[name="email"]', form);
+    var btn = $('button[type="submit"]', form);
+    var status = $('.newsletter-status', form);
+    var label = btn.firstChild.textContent;
+    function say(text, kind) {
+      status.textContent = text;
+      status.classList.toggle('is-ok', kind === 'ok');
+      status.classList.toggle('is-err', kind === 'err');
+    }
+    input.addEventListener('input', function () { input.removeAttribute('aria-invalid'); if (status.classList.contains('is-err')) say(''); });
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var email = input.value.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+        input.setAttribute('aria-invalid', 'true');
+        say('Enter an email like name@company.com.', 'err');
+        input.focus();
+        return;
+      }
+      btn.disabled = true; btn.firstChild.textContent = 'Subscribing ';
+      say('');
+      fetch('/api/newsletter?action=subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ email: email, page: location.pathname, website: form.website ? form.website.value : '' })
+      })
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { if (!r.ok) throw new Error(d.error || 'Something went wrong. Try again.'); return d; }); })
+        .then(function (d) {
+          var msg = d.status === 'already' ? "You're already subscribed. Thanks for being with us!"
+            : d.status === 'resubscribed' ? "Welcome back! You're subscribed again."
+            : "You're subscribed! Watch your inbox for our next email.";
+          form.classList.add('is-done');
+          say(msg, 'ok');
+          input.value = '';
+        })
+        .catch(function (err) {
+          say(err.message === 'Failed to fetch' ? 'Could not subscribe. Check your connection and try again.' : err.message, 'err');
+        })
+        .then(function () { btn.disabled = false; btn.firstChild.textContent = label; });
+    });
+  });
+
   /* ---------- Lightbox with page tabs ---------- */
   var lb = $('#lightbox');
   if (lb) {

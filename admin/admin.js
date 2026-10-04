@@ -57,7 +57,7 @@
   }
 
   /* ---------- Auth ---------- */
-  var VIEWS = ['messages', 'bookings', 'chat', 'content', 'stores', 'team'];
+  var VIEWS = ['messages', 'bookings', 'chat', 'subscribers', 'content', 'stores', 'team'];
   var me = null; // { id, name, email, role, isOwner }
   function setMe(data) {
     me = data;
@@ -117,6 +117,7 @@
     else if (name === 'chat') startChatPolling();
     else if (name === 'content') loadContent();
     else if (name === 'team') loadTeam();
+    else if (name === 'subscribers') loadSubscribers();
     else loadStores();
   }
   $$('.tab').forEach(function (t) { t.addEventListener('click', function () { setView(t.getAttribute('data-view')); }); });
@@ -253,9 +254,9 @@
     }).catch(function (err) { toast(err.message, true); });
   }
 
-  $$('.segment').forEach(function (b) {
+  $$('.segment[data-status]').forEach(function (b) {
     b.addEventListener('click', function () {
-      $$('.segment').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      $$('.segment[data-status]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
       msgState.status = b.getAttribute('data-status');
       msgState.selected = null;
       loadMessages();
@@ -1075,6 +1076,7 @@
     else if (currentView === 'content') loadContent(true);
     else if (currentView === 'stores') loadStores(true);
     else if (currentView === 'team') loadTeam(true);
+    else if (currentView === 'subscribers') loadSubscribers(true);
   }
   function refreshBadges() {
     if (currentView !== 'chat') api('/api/admin/chat?status=open').then(function (d) { setUnread(d.unread, d.open, d); }).catch(function () {});
@@ -1087,6 +1089,9 @@
         lastMsgNew = c.new;
         setBookingBadge(c.newBookings);
       }).catch(function () {});
+    }
+    if (currentView !== 'subscribers') {
+      api('/api/newsletter?status=subscribed&q=__none__').then(function (d) { setSubBadge(d.counts); }).catch(function () {});
     }
     api('/api/auth', { allow401: false }).then(function (d) {
       if (!me || d.name !== me.name || d.role !== me.role) {
@@ -1485,6 +1490,92 @@
     if (e.key !== 'Escape') return;
     if (!$('#admin-editor').hidden) closeDrawer('#admin-editor');
     if (!$('#me-editor').hidden) closeDrawer('#me-editor');
+  });
+
+  /* =========================================================
+     Newsletter subscribers
+     ========================================================= */
+  var subs = { status: 'subscribed', q: '', items: [], counts: {}, sig: '' };
+  var lastSubTotal = null;
+  // The tab badge shows sign-ups since you last opened Subscribers (remembered in this browser).
+  function seenSubs() { try { return Number(localStorage.getItem('ps_admin_subs_seen')) || 0; } catch (e) { return 0; } }
+  function setSubBadge(c) {
+    if (!c) return;
+    var total = c.subscribed + c.unsubscribed;
+    if (currentView === 'subscribers') { try { localStorage.setItem('ps_admin_subs_seen', String(total)); } catch (e) {} }
+    var seen = seenSubs();
+    if (!seen && total) { try { localStorage.setItem('ps_admin_subs_seen', String(total)); } catch (e) {} seen = total; }
+    var n = Math.max(0, total - seen);
+    var b = $('#sub-badge'); b.hidden = !n; b.textContent = n;
+    if (lastSubTotal !== null && total > lastSubTotal) toast('New newsletter subscriber.');
+    lastSubTotal = total;
+  }
+  function loadSubscribers(silent) {
+    var list = $('#sub-list');
+    if (!silent && !subs.items.length) list.replaceChildren(el('p', { class: 'list-empty', text: 'Loading subscribers' }));
+    var qs = '?status=' + subs.status + (subs.q ? '&q=' + encodeURIComponent(subs.q) : '');
+    $('#sub-export').href = '/api/newsletter' + qs + '&format=csv';
+    return api('/api/newsletter' + qs).then(function (d) {
+      var sig = qs + JSON.stringify(d);
+      if (silent && sig === subs.sig) return;
+      subs.sig = sig; subs.items = d.subscribers; subs.counts = d.counts;
+      setSubBadge(d.counts);
+      renderSubscribers();
+    }).catch(function (err) { if (err.status !== 401) list.replaceChildren(el('p', { class: 'list-empty', text: err.message })); });
+  }
+  function renderSubscribers() {
+    var c = subs.counts || {};
+    $('#sub-count-subscribed').textContent = c.subscribed || '';
+    $('#sub-count-unsubscribed').textContent = c.unsubscribed || '';
+    var stat = function (num, label) { return el('div', { class: 'sub-stat' }, [el('strong', { text: String(num || 0) }), el('span', { text: label })]); };
+    var st = $('#sub-stats');
+    st.replaceChildren(stat(c.subscribed, 'Subscribed'), stat(c.thisWeek, 'New in the last 7 days'), stat(c.unsubscribed, 'Unsubscribed'));
+    var list = $('#sub-list');
+    if (!subs.items.length) {
+      list.replaceChildren(el('p', { class: 'list-empty', text: subs.q ? 'No subscribers match "' + subs.q + '".' : subs.status === 'unsubscribed' ? 'Nobody has unsubscribed.' : 'No subscribers yet. Sign-ups from the newsletter form appear here.' }));
+      return;
+    }
+    list.replaceChildren.apply(list, [el('div', { class: 'sub-row sub-row--head', 'aria-hidden': 'true' }, [
+      el('span', { text: 'Email' }), el('span', { text: 'Signed up' }), el('span', { text: 'From page' }), el('span', { text: 'Status' }), el('span')
+    ])].concat(subs.items.map(function (x) {
+      var on = x.status === 'subscribed';
+      return el('div', { class: 'sub-row' + (on ? '' : ' is-off') }, [
+        el('a', { class: 'sub-email', href: 'mailto:' + x.email, text: x.email }),
+        el('span', { class: 'sub-date', text: fmtDate(x.createdAt, true) }),
+        el('span', { class: 'sub-src', text: x.source ? pageName(x.source) : '-' }),
+        el('span', {}, [el('span', { class: 'tag' + (on ? ' tag--ok' : ' tag--hidden'), text: on ? 'Subscribed' : 'Unsubscribed' })]),
+        el('div', { class: 'row-actions' }, [
+          el('button', { type: 'button', class: 'ghost-btn ghost-btn--sm', text: on ? 'Unsubscribe' : 'Resubscribe', onclick: function () { setSub(x, on ? 'unsubscribed' : 'subscribed'); } }),
+          el('button', { type: 'button', class: 'icon-btn icon-btn--danger', 'aria-label': 'Delete ' + x.email, html: ICON.trash, onclick: function () { deleteSub(x); } })
+        ])
+      ]);
+    })));
+  }
+  function pageName(p) {
+    if (p === '/' || p === '/index.html') return 'Homepage';
+    return p.replace(/^\/|\.html$/g, '').replace(/[-/]/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+  }
+  function setSub(x, status) {
+    if (status === 'subscribed' && !confirm('Resubscribe ' + x.email + '? Only do this if they asked to rejoin the list.')) return;
+    api('/api/newsletter', { method: 'PATCH', json: { ids: [x.id], status: status } }).then(function () {
+      toast(status === 'subscribed' ? x.email + ' is subscribed again.' : x.email + ' is unsubscribed.'); loadSubscribers(true);
+    }).catch(function (err) { toast(err.message, true); });
+  }
+  function deleteSub(x) {
+    if (!confirm('Delete ' + x.email + ' from the list completely? Use Unsubscribe instead if you want to remember they opted out.')) return;
+    api('/api/newsletter?id=' + x.id, { method: 'DELETE' }).then(function () { toast('Subscriber deleted.'); loadSubscribers(true); })
+      .catch(function (err) { toast(err.message, true); });
+  }
+  $$('[data-sub-status]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      $$('[data-sub-status]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      subs.status = b.getAttribute('data-sub-status'); subs.items = []; loadSubscribers();
+    });
+  });
+  var subTimer;
+  $('#sub-search').addEventListener('input', function (e) {
+    clearTimeout(subTimer);
+    subTimer = setTimeout(function () { subs.q = e.target.value.trim(); loadSubscribers(); }, 300);
   });
 
   /* ---------- Start ---------- */
