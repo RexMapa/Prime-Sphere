@@ -3,7 +3,7 @@
 import { db, ensureSchema } from '../lib/db.js';
 import { route, send, HttpError } from '../lib/http.js';
 
-const CACHE = { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120' };
+const CACHE = { 'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=30' };
 
 export default route(['GET'], async (req, res) => {
   await ensureSchema();

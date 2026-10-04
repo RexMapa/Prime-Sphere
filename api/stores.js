@@ -12,6 +12,6 @@ export default route(['GET'], async (req, res) => {
       ? `SELECT * FROM stores WHERE published AND featured ORDER BY sort_order, id LIMIT 5`
       : `SELECT * FROM stores WHERE published ORDER BY sort_order, id`
   );
-  // Cached at Vercel's edge for 30s, so admin changes appear within about half a minute.
-  send(res, 200, { stores: rows.map(toPublic) }, { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120' });
+  // Cached at Vercel's edge for 10s; open pages re-check every 30s, so admin changes appear without a refresh.
+  send(res, 200, { stores: rows.map(toPublic) }, { 'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=30' });
 });

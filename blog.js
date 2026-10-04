@@ -26,9 +26,14 @@
     article.appendChild(node('p', 'lede', 'Loading post'));
     $('#back-label').textContent = 'All posts';
     $('.back-link').href = '/blog';
-    fetch('/api/content?post=' + id, { headers: { Accept: 'application/json' } })
+    var postSig = '';
+    var loadPost = function (silent) {
+    return fetch('/api/content?post=' + id, { headers: { Accept: 'application/json' }, cache: 'no-store' })
       .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error || 'Post not found.'); return d.post; }); })
       .then(function (p) {
+        var sig = JSON.stringify(p);
+        if (silent && sig === postSig) return; // unchanged: don't touch the page while someone reads
+        postSig = sig;
         document.title = p.title + ' | PrimeSphere';
         var h = $('#blog-heading');
         h.replaceChildren(node('span', 'line'));
@@ -53,15 +58,30 @@
         }
       })
       .catch(function (e) {
-        article.replaceChildren(node('p', 'lede', e.message === 'Failed to fetch' ? 'This post could not be loaded. Check your connection and refresh.' : e.message));
+        if (silent && e.message === 'Failed to fetch') return; // offline for a moment: keep the post on screen
+        article.replaceChildren(node('p', 'lede', e.message === 'Failed to fetch' ? 'This post could not be loaded. Check your connection and try again.' : e.message));
       });
+    };
+    loadPost(false);
+    live(function () { loadPost(true); });
     return;
   }
 
-  fetch('/api/content', { headers: { Accept: 'application/json' } })
+  // Live updates: check again every 30 seconds while the tab is visible, and when the visitor returns to it.
+  function live(fn) {
+    setInterval(function () { if (!document.hidden) fn(); }, 30000);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) fn(); });
+  }
+
+  var listSig = '';
+  function loadList(silent) {
+  return fetch('/api/content', { headers: { Accept: 'application/json' }, cache: 'no-store' })
     .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
     .then(function (c) {
       var posts = c.post || [];
+      var sig = JSON.stringify(posts);
+      if (silent && sig === listSig) return;
+      listSig = sig;
       if (!posts.length) return showError('No posts yet. Check back soon.');
       grid.replaceChildren();
       posts.forEach(function (p) {
@@ -78,5 +98,8 @@
         grid.appendChild(card);
       });
     })
-    .catch(function () { showError('Posts could not be loaded. Check your connection and refresh.'); });
+    .catch(function () { if (!silent || !listSig) showError('Posts could not be loaded. Check your connection and try again.'); });
+  }
+  loadList(false);
+  live(function () { loadList(true); });
 })();

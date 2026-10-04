@@ -376,6 +376,20 @@
     askConfirm('End this chat? You can still rate it and start a new one after.', 'End chat', endChat);
   });
 
+  /* ---------- Sync between tabs ----------
+     The chat is saved in localStorage, so if the visitor has the site open in several tabs,
+     starting, ending or switching chats in one tab shows up in the others straight away. */
+  window.addEventListener('storage', function (e) {
+    if (e.key !== STORE_KEY) return;
+    var next = load();
+    if (next.id === state.id) { state = Object.assign(next, { open: state.open }); return; }
+    clearTimeout(pollTimer);
+    state = Object.assign(next, { open: state.open });
+    messages = []; status = 'none'; rating = ''; hasEmail = false;
+    render();
+    if (state.id) poll();
+  });
+
   /* ---------- Start ---------- */
   render();
   if (state.id) poll();

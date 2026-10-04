@@ -89,6 +89,22 @@ A new chat starts **Unassigned**. The first admin to select **Take this chat** (
 - **Release** puts a chat back in Unassigned. Super admins can **Take over** or **Unassign** any chat.
 - Takeovers and releases are logged in the thread as notes that only admins can see.
 
+## Live updates (no refresh needed)
+
+Everything updates on its own while the page is open:
+
+| Where | What updates | How often |
+| --- | --- | --- |
+| Admin > Live chat | chat list, open thread, who has each chat | every 3-4 seconds |
+| Admin, any tab | Messages, Bookings and Live chat badges; your name and role | every 8 seconds |
+| Admin > the section you're on | Messages, Bookings, Content, Stores, Team | every 8 seconds (paused while an editor is open) |
+| Website: homepage, stores, blog | stores, projects, services, testimonials, client logos, posts | every 30 seconds |
+| Contact > Book a call | available times (a slot someone just booked disappears) | every 30 seconds |
+| Chat widget | replies, chat ended, and sync between the visitor's open tabs | every 3 seconds open, 15 seconds minimised |
+
+Checks pause while the tab is in the background and run straight away when you come back to it.
+Lists only redraw when something actually changed, so nothing jumps while you're reading or typing.
+
 ## Changing your password
 
 Owner: change `ADMIN_PASSWORD` in Vercel and redeploy. Everyone signed in is signed out. Other admins: use **My account** in the dashboard.

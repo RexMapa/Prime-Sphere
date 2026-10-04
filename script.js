@@ -132,7 +132,12 @@
     revealEls.forEach(function (el) { el.classList.add('is-in'); });
     $$('[data-count]').forEach(function (el) { el.textContent = el.getAttribute('data-count'); });
   }
-  function reveal(el) { if (revealObs) revealObs.observe(el); else el.classList.add('is-in'); }
+  // During a live (background) update, redrawn cards appear instantly instead of animating in again.
+  var instantReveal = false;
+  function reveal(el) {
+    if (instantReveal || !revealObs) { el.classList.add('is-in'); return; }
+    revealObs.observe(el);
+  }
 
   /* ---------- Hero slider ---------- */
   var slides = $$('.slide');
@@ -342,12 +347,18 @@
   // Load stores from /api/stores. If the API isn't reachable (e.g. opening the file locally),
   // the cards already written in the HTML stay as a fallback.
   var storeGrid = $('[data-stores]');
-  if (storeGrid) {
+  var storesSig = '';
+  function loadPublicStores(silent) {
     var mode = storeGrid.getAttribute('data-stores');
-    fetch('/api/stores' + (mode === 'featured' ? '?featured=1' : ''), { headers: { Accept: 'application/json' } })
+    return fetch('/api/stores' + (mode === 'featured' ? '?featured=1' : ''), { headers: { Accept: 'application/json' }, cache: 'no-store' })
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
       .then(function (data) {
         var stores = data.stores || [];
+        var sig = JSON.stringify(stores);
+        if (silent && sig === storesSig) return; // nothing changed
+        storesSig = sig;
+        var activeFilter = ($('[data-filter][aria-pressed="true"]') || {}).getAttribute ? $('[data-filter][aria-pressed="true"]').getAttribute('data-filter') : 'all';
+        instantReveal = !!silent;
         storeGrid.innerHTML = '';
         stores.forEach(function (s, i) {
           var card = storeCard(s, i);
@@ -362,13 +373,16 @@
           buildFilters(stores);
           setCount(stores.length);
           if (empty) empty.hidden = stores.length > 0;
+          // Keep the visitor's category filter after a live update
+          var keep = silent && activeFilter !== 'all' && $('[data-filter="' + activeFilter + '"]');
+          if (keep) keep.click();
         }
+        instantReveal = false;
         prepShots();
       })
-      .catch(function () { prepShots(); });
-  } else {
-    prepShots();
+      .catch(function () { instantReveal = false; if (!silent) prepShots(); });
   }
+  if (storeGrid) loadPublicStores(false); else prepShots();
 
   /* ---------- Homepage sections loaded from /admin > Content ---------- */
   var SERVICE_ICONS = {
@@ -499,17 +513,50 @@
     });
   }
 
-  if ($('[data-content]')) {
-    fetch('/api/content', { headers: { Accept: 'application/json' } })
+  // Each section is redrawn only when its own items change, so carousels and the logo strip
+  // keep running smoothly between live updates.
+  var contentSig = {};
+  function changed(type, items) {
+    var sig = JSON.stringify(items || []);
+    if (contentSig[type] === sig) return false;
+    contentSig[type] = sig;
+    return true;
+  }
+  function unhide(box, items) {
+    var section = box && box.closest('section');
+    if (section && items.length) section.hidden = false;
+  }
+  function loadPublicContent(silent) {
+    return fetch('/api/content', { headers: { Accept: 'application/json' }, cache: 'no-store' })
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
       .then(function (c) {
-        var g = $('[data-content="project"]'); if (g) renderProjects(g, c.project || []);
-        var s = $('[data-content="service"]'); if (s) renderServices(s, c.service || []);
-        var t = $('[data-content="testimonial"]'); if (t) renderTestimonials(t, c.testimonial || []);
-        if ($('[data-content="client"]')) renderClients(c.client || []);
-        var p = $('[data-content="post"]'); if (p) renderPosts(p, c.post || []);
+        instantReveal = !!silent;
+        var g = $('[data-content="project"]'); if (g && changed('project', c.project)) renderProjects(g, c.project || []);
+        var s = $('[data-content="service"]'); if (s && changed('service', c.service)) renderServices(s, c.service || []);
+        var t = $('[data-content="testimonial"]'); if (t && changed('testimonial', c.testimonial)) { unhide(t, c.testimonial || []); renderTestimonials(t, c.testimonial || []); }
+        var cl = $('[data-content="client"]'); if (cl && changed('client', c.client)) { var sec = $('.clients'); if (sec && (c.client || []).length) sec.hidden = false; renderClients(c.client || []); }
+        var p = $('[data-content="post"]'); if (p && changed('post', c.post)) { unhide(p, c.post || []); renderPosts(p, c.post || []); }
+        instantReveal = false;
       })
-      .catch(function () { /* keep the built-in content */ });
+      .catch(function () { instantReveal = false; /* keep what is on screen */ });
+  }
+  if ($('[data-content]')) loadPublicContent(false);
+
+  /* ---------- Live updates (no refresh needed) ----------
+     Stores and homepage sections re-check the server every 30 seconds while the tab is visible,
+     and straight away when the visitor comes back to the tab. Nothing redraws unless it changed,
+     and nothing redraws while the store preview is open. */
+  var LIVE_MS = 30000;
+  function liveUpdate() {
+    if (document.hidden) return;
+    var box = $('#lightbox');
+    if (box && !box.hidden) return;
+    if (storeGrid) loadPublicStores(true);
+    if ($('[data-content]')) loadPublicContent(true);
+  }
+  if (storeGrid || $('[data-content]')) {
+    setInterval(liveUpdate, LIVE_MS);
+    document.addEventListener('visibilitychange', liveUpdate);
   }
 
   /* ---------- Lightbox with page tabs ---------- */

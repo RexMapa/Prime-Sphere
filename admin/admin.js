@@ -135,12 +135,16 @@
     return d.toLocaleString(undefined, opts);
   }
 
-  function loadMessages() {
+  function loadMessages(silent) {
     var list = $('#msg-list');
-    if (!msgState.items.length) list.replaceChildren(el('p', { class: 'list-empty', text: 'Loading messages' }));
+    if (!silent && !msgState.items.length) list.replaceChildren(el('p', { class: 'list-empty', text: 'Loading messages' }));
     var qs = '?kind=message&status=' + encodeURIComponent(msgState.status) + (msgState.q ? '&q=' + encodeURIComponent(msgState.q) : '');
     $('#export-csv').href = '/api/admin/submissions' + qs + '&format=csv';
     return api('/api/admin/submissions' + qs).then(function (data) {
+      var sig = qs + JSON.stringify(data);
+      if (silent && sig === msgState.sig) return; // nothing changed since last check
+      msgState.sig = sig;
+      if (silent && msgState.items.length && data.submissions.some(function (m) { return m.status === 'new' && !msgState.items.some(function (x) { return x.id === m.id; }); })) toast('New message received.');
       msgState.items = data.submissions;
       var c = data.counts || {};
       var badge = $('#new-badge');
@@ -263,19 +267,20 @@
     searchTimer = setTimeout(function () { msgState.q = e.target.value.trim(); msgState.selected = null; loadMessages(); }, 300);
   });
   // Refresh the inbox when you come back to the tab.
-  document.addEventListener('visibilitychange', function () {
-    if (!document.hidden && !$('#app').hidden && !$('#view-messages').hidden) loadMessages();
-  });
 
   /* =========================================================
      Stores
      ========================================================= */
   var stores = [];
 
-  function loadStores() {
+  var storesSig = '';
+  function loadStores(silent) {
     var list = $('#store-list');
-    if (!stores.length) list.replaceChildren(el('p', { class: 'list-empty', text: 'Loading stores' }));
+    if (!silent && !stores.length) list.replaceChildren(el('p', { class: 'list-empty', text: 'Loading stores' }));
     return api('/api/admin/stores').then(function (data) {
+      var sig = JSON.stringify(data.stores);
+      if (silent && sig === storesSig) return;
+      storesSig = sig;
       stores = data.stores;
       renderStores();
     }).catch(function (err) {
@@ -579,12 +584,16 @@
   }
   function bkStatusLabel(s) { return { new: 'New', confirmed: 'Confirmed', completed: 'Completed', cancelled: 'Cancelled' }[s] || s; }
 
-  function loadBookings() {
+  function loadBookings(silent) {
     var list = $('#bk-list');
-    if (!bk.items.length) list.replaceChildren(el('p', { class: 'list-empty', text: 'Loading bookings' }));
+    if (!silent && !bk.items.length) list.replaceChildren(el('p', { class: 'list-empty', text: 'Loading bookings' }));
     var qs = '?kind=booking&status=' + bk.status + (bk.q ? '&q=' + encodeURIComponent(bk.q) : '');
     $('#bk-export').href = '/api/admin/submissions' + qs + '&format=csv';
     return api('/api/admin/submissions' + qs).then(function (d) {
+      var sig = qs + JSON.stringify(d);
+      if (silent && sig === bk.sig) return;
+      bk.sig = sig;
+      if (silent && bk.items.length && d.submissions.some(function (m) { return !bk.items.some(function (x) { return x.id === m.id; }); })) toast('New booking received.');
       bk.items = d.submissions;
       setBookingBadge(d.counts.newBookings);
       $('#bk-upcoming-count').textContent = d.counts.upcoming || '';
@@ -777,8 +786,9 @@
   };
   var ct = { type: 'project', items: [], editing: null };
 
-  function loadContent() {
+  function loadContent(silent) {
     var isSettings = ct.type === 'booking';
+    if (silent && isSettings) return; // never overwrite the settings form while someone may be editing it
     $('#content-list').hidden = isSettings;
     $('#booking-settings').hidden = !isSettings;
     $('#content-add').hidden = isSettings;
@@ -787,10 +797,13 @@
     $('#content-help').textContent = T.help;
     $('#content-add-label').textContent = 'Add ' + T.label;
     var list = $('#content-list');
-    list.replaceChildren(el('p', { class: 'list-empty', text: 'Loading' }));
+    if (!silent) list.replaceChildren(el('p', { class: 'list-empty', text: 'Loading' }));
     var type = ct.type;
     return api('/api/admin/content?type=' + type).then(function (d) {
       if (ct.type !== type) return;
+      var sig = type + JSON.stringify(d.items);
+      if (silent && sig === ct.sig) return;
+      ct.sig = sig;
       ct.items = d.items; renderContent();
     }).catch(function (err) { if (err.status !== 401) list.replaceChildren(el('p', { class: 'list-empty', text: err.message })); });
   }
@@ -1044,19 +1057,61 @@
     chat.lastUnread = n;
   }
 
-  // Badge + sound on every tab of the admin, checked every 15 seconds.
+  /* ---------- Live updates (no refresh needed) ----------
+     Every few seconds while this tab is visible:
+     - the open section reloads quietly and only redraws when something changed,
+     - the tab badges (messages, bookings, chat) update on every section,
+     - your own account is re-checked, so a new name or role shows up right away.
+     Live chat has its own faster loop (every 3-4 seconds). */
+  var LIVE_MS = 8000;
+  var lastMsgNew = null;
+  function anyDrawerOpen() {
+    return ['#editor', '#content-editor', '#admin-editor', '#me-editor'].some(function (id) { var d = $(id); return d && !d.hidden; });
+  }
+  function refreshCurrentView() {
+    if (anyDrawerOpen()) return; // don't redraw underneath a form someone is filling in
+    if (currentView === 'messages') loadMessages(true);
+    else if (currentView === 'bookings') loadBookings(true);
+    else if (currentView === 'content') loadContent(true);
+    else if (currentView === 'stores') loadStores(true);
+    else if (currentView === 'team') loadTeam(true);
+  }
+  function refreshBadges() {
+    if (currentView !== 'chat') api('/api/admin/chat?status=open').then(function (d) { setUnread(d.unread, d.open, d); }).catch(function () {});
+    if (currentView !== 'messages' && currentView !== 'bookings') {
+      api('/api/admin/submissions?kind=message&status=new').then(function (d) {
+        var c = d.counts || {};
+        var badge = $('#new-badge');
+        badge.hidden = !c.new; badge.textContent = c.new || 0;
+        if (lastMsgNew !== null && c.new > lastMsgNew) toast('New message received.');
+        lastMsgNew = c.new;
+        setBookingBadge(c.newBookings);
+      }).catch(function () {});
+    }
+    api('/api/auth', { allow401: false }).then(function (d) {
+      if (!me || d.name !== me.name || d.role !== me.role) {
+        var lostTeam = me && me.role === 'super' && d.role !== 'super';
+        setMe(d);
+        if (lostTeam && currentView === 'team') setView('messages');
+      }
+    }).catch(function () {});
+  }
   function startUnreadWatch() {
     clearTimeout(watchTimer);
     var tick = function () {
       if ($('#app').hidden) return;
-      if (currentView !== 'chat' && !document.hidden) {
-        api('/api/admin/chat?status=open').then(function (d) { setUnread(d.unread, d.open, d); }).catch(function () {});
-        if (currentView !== 'bookings') api('/api/admin/submissions?kind=booking&status=upcoming').then(function (d) { setBookingBadge(d.counts.newBookings); }).catch(function () {});
-      }
-      watchTimer = setTimeout(tick, 15000);
+      if (!document.hidden) { refreshBadges(); refreshCurrentView(); }
+      watchTimer = setTimeout(tick, LIVE_MS);
     };
-    tick();
+    refreshBadges(); // the open section was just loaded by setView
+    watchTimer = setTimeout(tick, LIVE_MS);
   }
+  // Coming back to the tab: catch up straight away instead of waiting for the next tick.
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden || $('#app').hidden) return;
+    refreshBadges();
+    if (currentView === 'chat') startChatPolling(); else refreshCurrentView();
+  });
 
   function startChatPolling() { loadChatList(); if (chat.selected) loadThread(true); }
   function stopChatPolling() { clearTimeout(listTimer); clearTimeout(threadTimer); }
@@ -1289,12 +1344,16 @@
   /* =========================================================
      Team (super admins)
      ========================================================= */
-  var team = [];
+  var team = [], teamSig = '';
   function fmtAgo(iso) { return iso ? fmtDate(iso) : 'Never'; }
-  function loadTeam() {
+  function loadTeam(silent) {
     var list = $('#team-list');
-    if (!team.length) list.replaceChildren(el('p', { class: 'list-empty', text: 'Loading team' }));
-    return api('/api/admin/users').then(function (d) { team = d.admins; renderTeam(); })
+    if (!silent && !team.length) list.replaceChildren(el('p', { class: 'list-empty', text: 'Loading team' }));
+    return api('/api/admin/users').then(function (d) {
+      var sig = JSON.stringify(d.admins);
+      if (silent && sig === teamSig) return;
+      teamSig = sig; team = d.admins; renderTeam();
+    })
       .catch(function (err) { if (err.status !== 401) list.replaceChildren(el('p', { class: 'list-empty', text: err.message })); });
   }
   function renderTeam() {

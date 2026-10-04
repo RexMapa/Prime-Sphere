@@ -107,14 +107,21 @@
   /* ---------- Availability ---------- */
   var cfg = null, taken = {}, days = {}, months = [], monthIndex = 0;
   var picked = { date: null, slot: null, at: null };  // date = visitor's calendar day
-  var loading = false, loaded = false;
+  var loading = false, loaded = false, availSig = '';
 
-  function loadAvailability(force) {
+  // silent = background refresh: keeps the month and time the visitor is looking at,
+  // does nothing if no times changed, and never shows a loading error.
+  function loadAvailability(force, silent) {
     if ((loaded && !force) || loading) return;
     loading = true;
-    fetch('/api/contact?availability=1', { headers: { Accept: 'application/json' } })
+    fetch('/api/contact?availability=1', { headers: { Accept: 'application/json' }, cache: 'no-store' })
       .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
       .then(function (d) {
+        var sig = JSON.stringify(d);
+        if (silent && sig === availSig) return;
+        availSig = sig;
+        var keepMonth = silent ? months[monthIndex] : null;
+        var hadPick = picked.at ? picked.at.getTime() : 0;
         loaded = true;
         cfg = d.booking;
         taken = {};
@@ -123,12 +130,20 @@
         if (!cfg.enabled) { $('#booking-paused').hidden = false; $('#booking-form').hidden = true; return; }
         $('#booking-form').hidden = false;
         buildDays();
+        if (keepMonth && months.indexOf(keepMonth) > -1) monthIndex = months.indexOf(keepMonth);
+        if (picked.at) {
+          var still = (days[picked.date] || []).find(function (sl) { return sl.at.getTime() === picked.at.getTime(); });
+          if (still) picked.slot = still;
+          else {
+            picked = { date: days[picked.date] && days[picked.date].length ? picked.date : null, slot: null, at: null };
+            if (silent && hadPick) $('#slot-error').textContent = 'Sorry, the time you picked was just booked by someone else. Please choose another time.';
+          }
+        }
         renderCalendar();
-        if (picked.at && !(days[picked.date] || []).some(function (sl) { return sl.at.getTime() === picked.at.getTime(); })) { picked = { date: null, slot: null, at: null }; }
         renderSlots();
       })
       .catch(function () {
-        $('#booking-loading').textContent = 'Times could not be loaded. Check your connection and refresh the page, or send us a message instead.';
+        if (!silent || !loaded) $('#booking-loading').textContent = 'Times could not be loaded. Check your connection and refresh the page, or send us a message instead.';
       })
       .then(function () { loading = false; });
   }
@@ -321,6 +336,16 @@
       })
       .then(function () { submitBtn.disabled = false; submitBtn.firstChild.textContent = 'Book Call '; });
   });
+
+  // Live updates: re-check open times every 30 seconds while the booking tab is on screen,
+  // so slots other people just booked disappear without a page refresh.
+  function liveCheck() {
+    var panel = $('#panel-booking');
+    if (document.hidden || !loaded || !panel || panel.hidden || form.hidden || submitBtn.disabled) return;
+    loadAvailability(true, true);
+  }
+  setInterval(liveCheck, 30000);
+  document.addEventListener('visibilitychange', liveCheck);
 
   $('#done-again').addEventListener('click', function () {
     $('#booking-done').hidden = true;
