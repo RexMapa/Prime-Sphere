@@ -584,7 +584,7 @@ p { margin: 0; }
   cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: background 0.25s;
 }
 .lightbox-btn:hover { background: var(--accent-fill); }
-.lightbox-scroll { flex: 1; overflow-y: auto; overscroll-behavior: contain; background: #fff; }
+.lightbox-scroll { flex: 1; overflow-y: auto; overscroll-behavior: contain; background: var(--bg); }
 .lightbox-scroll img { width: 100%; height: auto; display: block; opacity: 0; transition: opacity 0.4s; }
 .lightbox-scroll img.is-ready { opacity: 1; }
 body.lightbox-open { overflow: hidden; }

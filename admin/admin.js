@@ -734,7 +734,7 @@
   ];
   var TYPES = {
     project: {
-      label: 'project', plural: 'Projects', help: 'Projects in the "See Our Recent Projects" section. The first 3 fit the homepage layout best.',
+      label: 'project', plural: 'Projects', help: 'Projects in the "See Our Recent Projects" section. The homepage shows 3: turn on "Show on homepage" for the ones you want. The Work page shows all of them.',
       fields: [
         { key: 'title', label: 'Project title*', type: 'text', max: 120, required: true, placeholder: 'e.g. Creative Logo Design' },
         { key: 'tags', label: 'Categories', type: 'text', max: 120, placeholder: 'e.g. Branding, Identity' },
@@ -849,6 +849,7 @@
           T.quote ? el('span', { class: 'content-quote', text: T.quote(d) }) : null,
           el('div', { class: 'tags' }, [
             T.sub(d) ? el('span', { class: 'tag', text: T.sub(d) }) : null,
+            ct.type === 'project' && d.featured ? el('span', { class: 'tag', text: 'On homepage' }) : null,
             it.published ? null : el('span', { class: 'tag tag--hidden', text: 'Hidden' })
           ])
         ]),
@@ -934,7 +935,10 @@
     box.replaceChildren.apply(box, T.fields.map(function (f) { return buildField(f, d[f.key]); }).concat([
       el('label', { class: 'toggle' }, [el('input', { type: 'checkbox', id: 'cf-published', checked: it ? it.published : true }), el('span', { class: 'switch', 'aria-hidden': 'true' }),
         el('span', {}, [el('strong', { text: 'Show on website' }), el('small', { text: 'Turn off to hide it without deleting.' })])])
-    ]));
+    ].concat(ct.type === 'project' ? [
+      el('label', { class: 'toggle' }, [el('input', { type: 'checkbox', id: 'cf-featured', checked: !!d.featured }), el('span', { class: 'switch', 'aria-hidden': 'true' }),
+        el('span', {}, [el('strong', { text: 'Show on homepage' }), el('small', { text: 'The homepage shows up to 3 projects. If none are turned on, it shows the first 3.' })])])
+    ] : [])));
     var dr = $('#content-editor');
     dr.hidden = false; document.body.style.overflow = 'hidden';
     requestAnimationFrame(function () { requestAnimationFrame(function () { dr.classList.add('is-open'); }); });
@@ -962,6 +966,7 @@
     });
     var missing = T.fields.find(function (f) { return f.required && !data[f.key]; });
     if (missing) { msg.textContent = 'Fill in ' + missing.label.replace('*', '').toLowerCase() + '.'; $('[data-key="' + missing.key + '"]', cForm).focus(); return; }
+    if (ct.type === 'project') data.featured = $('#cf-featured').checked;
     var published = $('#cf-published').checked;
     var btn = $('#content-save'); btn.disabled = true; btn.textContent = 'Saving';
     var req = ct.editing

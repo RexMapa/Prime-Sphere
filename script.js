@@ -452,6 +452,9 @@
     if (cols.length < 2) return;
     $$('.project', grid).forEach(function (n) { n.remove(); });
     var cta = $('.work-cta', cols[1]);
+    // Homepage shows 3 projects: the ones marked "Show on homepage", or the first 3 if none are marked.
+    var picked = items.filter(function (p) { return p.featured; });
+    items = (picked.length ? picked : items).slice(0, 3);
     items.forEach(function (p, i) {
       var card = projectCard(p);
       // Layout: 1st and 2nd in the left column, 3rd on the right, then alternate.
