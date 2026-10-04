@@ -1148,3 +1148,17 @@ img.avatar { object-fit: cover; }
 .unsub-card p { color: var(--text-2); }
 .unsub-actions { display: flex; flex-wrap: wrap; gap: 12px; }
 .unsub-card .newsletter-status:empty { display: none; }
+
+/* ---------- Countdown offer ---------- */
+.promo { padding: 64px 0; background: radial-gradient(60% 120% at 50% 0%, rgba(30,144,255,.14), transparent 70%), var(--bg-2); border-block: 1px solid rgba(255,255,255,.05); text-align: center; }
+.promo-badge { display: inline-block; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); border: 1px solid var(--line-2); border-radius: 999px; padding: 6px 14px; margin: 0 0 18px; }
+.promo-title { font-size: clamp(30px, 5vw, 52px); line-height: 1.1; margin: 0 0 12px; }
+.promo-sub { color: rgba(255,255,255,.7); margin: 0 auto 36px; max-width: 560px; }
+.promo-timer { display: flex; justify-content: center; gap: clamp(10px, 3vw, 28px); flex-wrap: wrap; margin-bottom: 36px; }
+.promo-cell { position: relative; width: clamp(76px, 20vw, 132px); display: grid; justify-items: center; }
+.promo-cell svg { width: 100%; height: auto; display: block; }
+.promo-track { fill: none; stroke: rgba(255,255,255,.1); stroke-width: 4; }
+.promo-arc { fill: none; stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset .9s linear; }
+.promo-num { position: absolute; top: 0; left: 0; width: 100%; aspect-ratio: 1; display: grid; place-items: center; font-size: clamp(24px, 6vw, 40px); font-weight: 300; font-variant-numeric: tabular-nums; padding-bottom: 0; }
+.promo-label { margin-top: 12px; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.6); }
+@media (prefers-reduced-motion: reduce) { .promo-arc { transition: none; } }

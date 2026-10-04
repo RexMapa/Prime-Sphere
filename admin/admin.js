@@ -788,11 +788,14 @@
   var ct = { type: 'project', items: [], editing: null };
 
   function loadContent(silent) {
-    var isSettings = ct.type === 'booking';
+    var isPromo = ct.type === 'promo';
+    var isSettings = ct.type === 'booking' || isPromo;
     if (silent && isSettings) return; // never overwrite the settings form while someone may be editing it
     $('#content-list').hidden = isSettings;
-    $('#booking-settings').hidden = !isSettings;
+    $('#booking-settings').hidden = ct.type !== 'booking';
+    $('#promo-settings').hidden = !isPromo;
     $('#content-add').hidden = isSettings;
+    if (isPromo) { $('#content-help').textContent = 'The countdown timer and discount banner on the homepage.'; return loadPromoSettings(); }
     if (isSettings) { $('#content-help').textContent = 'When people can book calls from the contact page.'; return loadBookingSettings(); }
     var T = TYPES[ct.type];
     $('#content-help').textContent = T.help;
@@ -1013,6 +1016,62 @@
     api('/api/admin/content?settings=booking', { method: 'PUT', json: payload }).then(function (d) {
       bset = d.booking; renderBookingSettings(); toast('Booking settings saved.');
     }).catch(function (err) { msg.textContent = err.message; btn.disabled = false; btn.textContent = 'Save settings'; });
+  });
+
+
+  /* ---------- Countdown offer ---------- */
+  var pset = null;
+  function toLocalInput(iso) {
+    if (!iso) return '';
+    var d = new Date(iso); if (isNaN(d)) return '';
+    var z = function (n) { return String(n).padStart(2, '0'); };
+    return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()) + 'T' + z(d.getHours()) + ':' + z(d.getMinutes());
+  }
+  function loadPromoSettings() {
+    var f = $('#promo-settings');
+    f.replaceChildren(el('p', { class: 'muted', text: 'Loading settings' }));
+    return api('/api/admin/content?settings=promo').then(function (d) { pset = d.promo; renderPromoSettings(); })
+      .catch(function (err) { f.replaceChildren(el('p', { class: 'form-msg', text: err.message })); });
+  }
+  function renderPromoSettings() {
+    var f = $('#promo-settings');
+    var zone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'your time zone';
+    var end = el('input', { type: 'datetime-local', name: 'endsAt', value: toLocalInput(pset.endsAt) });
+    var setEnd = function (d) { end.value = toLocalInput(d.toISOString()); };
+    var txt = function (name, label, value, max, hint, ph) {
+      return el('label', { class: 'field' }, [label, el('input', { type: 'text', name: name, value: value || '', maxlength: String(max), placeholder: ph || '' }), hint ? el('small', { text: hint }) : null]);
+    };
+    var msg = el('p', { class: 'form-msg', role: 'alert' });
+    f.replaceChildren(
+      el('label', { class: 'toggle' }, [el('input', { type: 'checkbox', name: 'enabled', checked: pset.enabled }), el('span', { class: 'switch', 'aria-hidden': 'true' }),
+        el('span', {}, [el('strong', { text: 'Show the countdown on the homepage' }), el('small', { text: 'It hides itself automatically when the timer reaches zero.' })])]),
+      txt('title', 'Headline', pset.title, 80, 'For example: Up to 50% off'),
+      txt('badge', 'Small label above the headline', pset.badge, 40, '', 'Limited time offer'),
+      txt('subtitle', 'Short description', pset.subtitle, 160),
+      el('div', { class: 'row-3' }, [txt('ctaText', 'Button text', pset.ctaText, 30), txt('ctaUrl', 'Button link', pset.ctaUrl, 500, '', '/contact')]),
+      el('div', { class: 'field' }, [el('span', { text: 'Offer ends' }), end,
+        el('small', { text: 'Time zone: ' + zone + ' (your browser). Visitors everywhere see the same moment of expiry.' }),
+        el('div', { class: 'add-slot' }, [
+          el('button', { type: 'button', class: 'ghost-btn', text: 'End today 11:59 PM', onclick: function () { var d = new Date(); d.setHours(23, 59, 0, 0); setEnd(d); } }),
+          el('button', { type: 'button', class: 'ghost-btn', text: 'In 24 hours', onclick: function () { setEnd(new Date(Date.now() + 864e5)); } }),
+          el('button', { type: 'button', class: 'ghost-btn', text: 'In 3 days', onclick: function () { setEnd(new Date(Date.now() + 3 * 864e5)); } })
+        ])]),
+      el('div', { class: 'settings-foot' }, [msg, el('button', { type: 'submit', class: 'btn', text: 'Save countdown' })])
+    );
+  }
+  $('#promo-settings').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var f = e.target, msg = $('.form-msg', f), btn = $('button[type="submit"]', f);
+    var when = f.endsAt.value ? new Date(f.endsAt.value) : null;
+    var payload = {
+      enabled: f.enabled.checked, title: f.title.value, badge: f.badge.value, subtitle: f.subtitle.value,
+      ctaText: f.ctaText.value, ctaUrl: f.ctaUrl.value, endsAt: when && !isNaN(when) ? when.toISOString() : ''
+    };
+    msg.textContent = '';
+    btn.disabled = true; btn.textContent = 'Saving';
+    api('/api/admin/content?settings=promo', { method: 'PUT', json: payload }).then(function (d) {
+      pset = d.promo; renderPromoSettings(); toast('Countdown saved.');
+    }).catch(function (err) { msg.textContent = err.message; btn.disabled = false; btn.textContent = 'Save countdown'; });
   });
 
   /* =========================================================
