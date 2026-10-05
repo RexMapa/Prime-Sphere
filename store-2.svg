@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="4200" viewBox="0 0 1440 4200" font-family="Helvetica, Arial, sans-serif">
+<rect width="1440" height="4200" fill="#0F1115"/>
+<rect width="1440" height="40" fill="#7C5CFF"/><text x="720" y="26" fill="#fff" font-size="15" text-anchor="middle">Announcement bar</text>
+<text x="80" y="110" fill="#F5F5F5" font-size="30" font-weight="700">STORE 2</text>
+<text x="560" y="108" fill="#F5F5F5" font-size="17">Shop</text>
+<text x="680" y="108" fill="#F5F5F5" font-size="17">Collections</text>
+<text x="800" y="108" fill="#F5F5F5" font-size="17">About</text>
+<text x="920" y="108" fill="#F5F5F5" font-size="17">Contact</text>
+<rect x="1220" y="84" width="140" height="40" rx="20" fill="#F5F5F5"/><text x="1290" y="110" fill="#0F1115" font-size="15" text-anchor="middle">Cart (0)</text>
+<rect x="0" y="160" width="1440" height="760" fill="#F5F5F5" opacity="0.08"/>
+<text x="120" y="440" fill="#F5F5F5" font-size="76" font-weight="700">Store 2 homepage</text>
+<text x="120" y="510" fill="#F5F5F5" font-size="26" opacity="0.7">Placeholder screenshot. Replace with a full-page capture.</text>
+<rect x="120" y="570" width="240" height="64" rx="32" fill="#7C5CFF"/><text x="240" y="610" fill="#fff" font-size="20" text-anchor="middle">Shop now</text>
+<rect x="820" y="230" width="500" height="620" rx="16" fill="#7C5CFF" opacity="0.25"/>
+<text x="120" y="1060" fill="#F5F5F5" font-size="40" font-weight="700">Best sellers</text>
+<rect x="120" y="1110" width="280" height="380" rx="10" fill="#F5F5F5" opacity="0.08"/>
+<rect x="120" y="1510" width="200" height="18" rx="4" fill="#F5F5F5" opacity="0.5"/>
+<rect x="120" y="1542" width="90" height="18" rx="4" fill="#7C5CFF"/>
+<rect x="430" y="1110" width="280" height="380" rx="10" fill="#F5F5F5" opacity="0.08"/>
+<rect x="430" y="1510" width="200" height="18" rx="4" fill="#F5F5F5" opacity="0.5"/>
+<rect x="430" y="1542" width="90" height="18" rx="4" fill="#7C5CFF"/>
+<rect x="740" y="1110" width="280" height="380" rx="10" fill="#F5F5F5" opacity="0.08"/>
+<rect x="740" y="1510" width="200" height="18" rx="4" fill="#F5F5F5" opacity="0.5"/>
+<rect x="740" y="1542" width="90" height="18" rx="4" fill="#7C5CFF"/>
+<rect x="1050" y="1110" width="280" height="380" rx="10" fill="#F5F5F5" opacity="0.08"/>
+<rect x="1050" y="1510" width="200" height="18" rx="4" fill="#F5F5F5" opacity="0.5"/>
+<rect x="1050" y="1542" width="90" height="18" rx="4" fill="#7C5CFF"/>
+<rect x="120" y="1670" width="280" height="380" rx="10" fill="#F5F5F5" opacity="0.08"/>
+<rect x="120" y="2070" width="200" height="18" rx="4" fill="#F5F5F5" opacity="0.5"/>
+<rect x="120" y="2102" width="90" height="18" rx="4" fill="#7C5CFF"/>
+<rect x="430" y="1670" width="280" height="380" rx="10" fill="#F5F5F5" opacity="0.08"/>
+<rect x="430" y="2070" width="200" height="18" rx="4" fill="#F5F5F5" opacity="0.5"/>
+<rect x="430" y="2102" width="90" height="18" rx="4" fill="#7C5CFF"/>
+<rect x="740" y="1670" width="280" height="380" rx="10" fill="#F5F5F5" opacity="0.08"/>
+<rect x="740" y="2070" width="200" height="18" rx="4" fill="#F5F5F5" opacity="0.5"/>
+<rect x="740" y="2102" width="90" height="18" rx="4" fill="#7C5CFF"/>
+<rect x="1050" y="1670" width="280" height="380" rx="10" fill="#F5F5F5" opacity="0.08"/>
+<rect x="1050" y="2070" width="200" height="18" rx="4" fill="#F5F5F5" opacity="0.5"/>
+<rect x="1050" y="2102" width="90" height="18" rx="4" fill="#7C5CFF"/>
+<rect x="0" y="2280" width="1440" height="620" fill="#7C5CFF" opacity="0.15"/>
+<text x="720" y="2560" fill="#F5F5F5" font-size="52" font-weight="700" text-anchor="middle">Brand story section</text>
+<text x="720" y="2620" fill="#F5F5F5" font-size="24" opacity="0.7" text-anchor="middle">Lifestyle imagery and copy</text>
+<text x="120" y="3060" fill="#F5F5F5" font-size="40" font-weight="700">Reviews</text>
+<rect x="120" y="3110" width="380" height="260" rx="12" fill="#F5F5F5" opacity="0.07"/>
+<rect x="530" y="3110" width="380" height="260" rx="12" fill="#F5F5F5" opacity="0.07"/>
+<rect x="940" y="3110" width="380" height="260" rx="12" fill="#F5F5F5" opacity="0.07"/>
+<rect x="0" y="3560" width="1440" height="640" fill="#F5F5F5"/>
+<text x="120" y="3680" fill="#0F1115" font-size="30" font-weight="700">STORE 2</text>
+<text x="120" y="3740" fill="#0F1115" font-size="18" opacity="0.6">Footer links, newsletter signup, payment icons</text>
+</svg>

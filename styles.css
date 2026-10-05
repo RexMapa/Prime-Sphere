@@ -1222,3 +1222,15 @@ button.round-link { cursor: pointer; font: inherit; padding: 0; }
 [hidden] { display: none !important; }
 @media (max-width: 960px) { .project-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .work-stats-grid { grid-template-columns: repeat(2, 1fr); } .work-stats-grid > div:nth-child(2) { border-right: 0; } .work-stats-grid > div:nth-child(-n+2) { border-bottom: 1px solid var(--line); } }
 @media (max-width: 760px) { .case-grid, .project-grid { grid-template-columns: 1fr; } .case-card { padding: 24px; } .case-stats b { font-size: 17px; } }
+
+/* Client login link in the main nav */
+.nav-links a.nav-client { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border: 1px solid rgba(127, 216, 255, 0.28); border-radius: 999px; color: #CFEFFF; background: rgba(31, 190, 248, 0.07); transition: border-color 0.25s, background 0.25s, color 0.25s; }
+.nav-links a.nav-client::after { display: none; }
+.nav-links a.nav-client:hover { color: #fff; border-color: rgba(127, 216, 255, 0.6); background: rgba(31, 190, 248, 0.14); }
+@media (max-width: 1240px) and (min-width: 861px) {
+  .nav-links a.nav-client { padding: 7px; }
+  .nav-links a.nav-client span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+@media (max-width: 860px) {
+  .nav-links a.nav-client { display: flex; gap: 10px; border-radius: 0; border: 0; border-bottom: 1px solid var(--line); background: none; padding: 16px 0; color: var(--text); }
+}
