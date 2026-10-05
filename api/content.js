@@ -1,4 +1,4 @@
-// GET /api/content          -> all published homepage sections (posts without their full text)
+// GET /api/content          -> all published homepage sections (posts without their full text, team members included)
 // GET /api/content?promo=1  -> the countdown offer (or null)
 // GET /api/content?post=12  -> one published blog post with its full text
 import { db, ensureSchema } from '../lib/db.js';
@@ -25,7 +25,7 @@ export default route(['GET'], async (req, res) => {
   }
 
   const rows = await query(`SELECT id, type, data FROM content_items WHERE published ORDER BY type, sort_order, id`);
-  const out = { project: [], service: [], testimonial: [], client: [], post: [], case: [] };
+  const out = { project: [], service: [], testimonial: [], client: [], post: [], case: [], member: [] };
   out.work = await getWork(query);
   rows.forEach((r) => {
     if (!out[r.type]) return;

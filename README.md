@@ -53,6 +53,11 @@ Set your days, start times, call length, time zone and notice period in **admin 
 Add, edit, reorder, hide or delete items; upload images straight from the editor. A section with no visible items is hidden on the site.
 Blog posts get their own page at `blog.html?post=ID`, and the 2 newest also show on the homepage.
 
+**Team members** (admin > Content > Team members) fill the "Meet Our Team" section. The About page shows everyone in list order,
+with their bio and social links. The homepage shows up to 4: the ones with "Show on homepage" turned on, or the first 4 if none are,
+plus a "Meet the Whole Team" button when there are more. With no visible members, both sections stay hidden.
+These are public profiles only; admin logins are still managed in admin > Team.
+
 ## Live chat
 
 The chat button sits on the bottom right of every public page. When a visitor sends a message it appears in

@@ -1,5 +1,5 @@
 // Admin: homepage sections and booking settings.
-// GET    ?type=project|service|testimonial|client|post   -> items (including hidden)
+// GET    ?type=project|service|testimonial|client|post|case|member   -> items (including hidden)
 // GET    ?settings=booking
 // POST   { type, data, published }
 // PUT    { id, data, published }

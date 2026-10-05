@@ -781,6 +781,20 @@
       ],
       title: function (d) { return d.name; }, sub: function (d) { return d.role; }, quote: function (d) { return d.quote; }, image: function (d) { return d.avatar; }
     },
+    member: {
+      label: 'team member', plural: 'Team members', help: 'People in the "Meet Our Team" section. The About page shows everyone; the homepage shows up to 4. These are public profiles, separate from the admin logins in the Team tab.',
+      fields: [
+        { key: 'name', label: 'Full name*', type: 'text', max: 80, required: true, placeholder: 'e.g. Juan Dela Cruz' },
+        { key: 'role', label: 'Role*', type: 'text', max: 80, required: true, placeholder: 'e.g. Shopify Developer' },
+        { key: 'photo', label: 'Photo', type: 'image', hint: 'Portrait (taller than wide), about 800 x 1000. Faces near the top work best. Without a photo, their initials are shown.' },
+        { key: 'bio', label: 'Short bio (optional)', type: 'textarea', max: 280, placeholder: 'One or two sentences about what they do', hint: 'Shown on the About page under their name.' },
+        { key: 'linkedin', label: 'LinkedIn (optional)', type: 'url', placeholder: 'https://www.linkedin.com/in/...' },
+        { key: 'facebook', label: 'Facebook (optional)', type: 'url', placeholder: 'https://www.facebook.com/...' },
+        { key: 'instagram', label: 'Instagram (optional)', type: 'url', placeholder: 'https://www.instagram.com/...' },
+        { key: 'website', label: 'Website or portfolio (optional)', type: 'url', placeholder: 'https://' }
+      ],
+      title: function (d) { return d.name; }, sub: function (d) { return d.role; }, image: function (d) { return d.photo; }
+    },
     client: {
       label: 'client logo', plural: 'Client logos', help: 'Logos in the scrolling "Trusted by brands" strip. Transparent PNG or WebP logos look best.',
       fields: [
@@ -850,7 +864,7 @@
           T.quote ? el('span', { class: 'content-quote', text: T.quote(d) }) : null,
           el('div', { class: 'tags' }, [
             T.sub(d) ? el('span', { class: 'tag', text: T.sub(d) }) : null,
-            ct.type === 'project' && d.featured ? el('span', { class: 'tag', text: 'On homepage' }) : null,
+            (ct.type === 'project' || ct.type === 'member') && d.featured ? el('span', { class: 'tag', text: 'On homepage' }) : null,
             it.published ? null : el('span', { class: 'tag tag--hidden', text: 'Hidden' })
           ])
         ]),
@@ -936,9 +950,11 @@
     box.replaceChildren.apply(box, T.fields.map(function (f) { return buildField(f, d[f.key]); }).concat([
       el('label', { class: 'toggle' }, [el('input', { type: 'checkbox', id: 'cf-published', checked: it ? it.published : true }), el('span', { class: 'switch', 'aria-hidden': 'true' }),
         el('span', {}, [el('strong', { text: 'Show on website' }), el('small', { text: 'Turn off to hide it without deleting.' })])])
-    ].concat(ct.type === 'project' ? [
+    ].concat(ct.type === 'project' || ct.type === 'member' ? [
       el('label', { class: 'toggle' }, [el('input', { type: 'checkbox', id: 'cf-featured', checked: !!d.featured }), el('span', { class: 'switch', 'aria-hidden': 'true' }),
-        el('span', {}, [el('strong', { text: 'Show on homepage' }), el('small', { text: 'The homepage shows up to 3 projects. If none are turned on, it shows the first 3.' })])])
+        el('span', {}, [el('strong', { text: 'Show on homepage' }), el('small', { text: ct.type === 'member'
+          ? 'The homepage shows up to 4 team members. If none are turned on, it shows the first 4 in this list.'
+          : 'The homepage shows up to 3 projects. If none are turned on, it shows the first 3.' })])])
     ] : [])));
     var dr = $('#content-editor');
     dr.hidden = false; document.body.style.overflow = 'hidden';
@@ -967,7 +983,7 @@
     });
     var missing = T.fields.find(function (f) { return f.required && !data[f.key]; });
     if (missing) { msg.textContent = 'Fill in ' + missing.label.replace('*', '').toLowerCase() + '.'; $('[data-key="' + missing.key + '"]', cForm).focus(); return; }
-    if (ct.type === 'project') data.featured = $('#cf-featured').checked;
+    if (ct.type === 'project' || ct.type === 'member') data.featured = $('#cf-featured').checked;
     var published = $('#cf-published').checked;
     var btn = $('#content-save'); btn.disabled = true; btn.textContent = 'Saving';
     var req = ct.editing

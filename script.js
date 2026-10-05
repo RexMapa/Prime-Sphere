@@ -520,6 +520,73 @@
     });
     if (window.__setMarqueeItems) window.__setMarqueeItems(els);
   }
+  // Meet Our Team: homepage shows up to data-limit members (the ones marked "Show on homepage",
+  // or the first ones in list order); the About page shows everyone, with bios.
+  var SOCIAL_ICONS = {
+    linkedin: ['LinkedIn', '<path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/>'],
+    facebook: ['Facebook', '<path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>'],
+    instagram: ['Instagram', '<rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><path d="M17.5 6.5h.01"/>'],
+    website: ['Website', '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>']
+  };
+  function initials(name) {
+    return String(name || '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map(function (w) { return w.charAt(0).toUpperCase(); }).join('');
+  }
+  function memberCard(m, i, withBio) {
+    var art = node('article', 'member reveal');
+    art.style.setProperty('--d', (i % 4) * 0.08 + 's');
+    var ph = node('div', 'member-photo');
+    if (m.photo) {
+      var im = node('img'); im.src = safeUrl(m.photo); im.loading = 'lazy'; im.decoding = 'async';
+      im.alt = m.name + (m.role ? ', ' + m.role : '');
+      ph.appendChild(im);
+    } else {
+      var ini = node('span', 'member-initials', initials(m.name)); ini.setAttribute('aria-hidden', 'true');
+      ph.appendChild(ini);
+    }
+    ph.appendChild(node('span', 'member-shade'));
+    var links = Object.keys(SOCIAL_ICONS).filter(function (k) { return m[k]; });
+    if (links.length) {
+      var ul = node('ul', 'member-social');
+      links.forEach(function (k) {
+        var li = node('li'), a = node('a');
+        a.href = safeUrl(m[k]); a.target = '_blank'; a.rel = 'noopener';
+        a.setAttribute('aria-label', m.name + ' on ' + SOCIAL_ICONS[k][0]);
+        a.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + SOCIAL_ICONS[k][1] + '</svg>';
+        li.appendChild(a); ul.appendChild(li);
+      });
+      ph.appendChild(ul);
+    }
+    art.appendChild(ph);
+    var info = node('div', 'member-info');
+    info.appendChild(node('span', 'member-num', (i + 1 < 10 ? '0' : '') + (i + 1)));
+    info.appendChild(node('h3', null, m.name));
+    if (m.role) info.appendChild(node('p', 'member-role', m.role));
+    if (withBio && m.bio) info.appendChild(node('p', 'member-bio', m.bio));
+    art.appendChild(info);
+    return art;
+  }
+  function renderTeam(box, items) {
+    var section = box.closest('section');
+    if (!items.length) { if (section) section.hidden = true; return; }
+    if (section) section.hidden = false;
+    var limit = parseInt(box.getAttribute('data-limit'), 10) || 0;
+    var list = items;
+    if (limit) {
+      var picked = items.filter(function (m) { return m.featured; });
+      list = (picked.length ? picked : items).slice(0, limit);
+    }
+    var withBio = box.getAttribute('data-bios') === '1';
+    box.classList.toggle('team-grid--few', list.length < 3);
+    box.replaceChildren();
+    list.forEach(function (m, i) { var c = memberCard(m, i, withBio); box.appendChild(c); reveal(c); });
+    var more = section && $('.team-more', section);
+    if (more) more.hidden = list.length >= items.length;
+    // Links to /about#team land before the section exists, so scroll once it is drawn.
+    if (section && section.id && location.hash === '#' + section.id && !box.__scrolled) {
+      box.__scrolled = true;
+      requestAnimationFrame(function () { section.scrollIntoView({ block: 'start' }); });
+    }
+  }
   function postHref(p) { return '/blog?post=' + p.id; }
   function fmtPostDate(d) {
     if (!d) return '';
@@ -637,6 +704,7 @@
         var s = $('[data-content="service"]'); if (s && changed('service', c.service)) renderServices(s, c.service || []);
         var t = $('[data-content="testimonial"]'); if (t && changed('testimonial', c.testimonial)) { unhide(t, c.testimonial || []); renderTestimonials(t, c.testimonial || []); }
         var cl = $('[data-content="client"]'); if (cl && changed('client', c.client)) { var sec = $('.clients'); if (sec && (c.client || []).length) sec.hidden = false; renderClients(c.client || []); }
+        var tm = $('[data-content="member"]'); if (tm && changed('member', c.member)) renderTeam(tm, c.member || []);
         var p = $('[data-content="post"]'); if (p && changed('post', c.post)) { unhide(p, c.post || []); renderPosts(p, c.post || []); }
         instantReveal = false;
       })
