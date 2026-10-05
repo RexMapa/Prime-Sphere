@@ -57,7 +57,7 @@
   }
 
   /* ---------- Auth ---------- */
-  var VIEWS = ['messages', 'bookings', 'chat', 'subscribers', 'content', 'stores', 'team'];
+  var VIEWS = ['messages', 'bookings', 'chat', 'clients', 'subscribers', 'content', 'stores', 'team'];
   var me = null; // { id, name, email, role, isOwner }
   function setMe(data) {
     me = data;
@@ -118,6 +118,7 @@
     else if (name === 'content') loadContent();
     else if (name === 'team') loadTeam();
     else if (name === 'subscribers') loadSubscribers();
+    else if (name === 'clients') { if (window.PSClients) window.PSClients.load(); }
     else loadStores();
   }
   $$('.tab').forEach(function (t) { t.addEventListener('click', function () { setView(t.getAttribute('data-view')); }); });
@@ -1200,7 +1201,7 @@
   var LIVE_MS = 8000;
   var lastMsgNew = null;
   function anyDrawerOpen() {
-    return ['#editor', '#content-editor', '#admin-editor', '#me-editor'].some(function (id) { var d = $(id); return d && !d.hidden; });
+    return ['#editor', '#content-editor', '#admin-editor', '#me-editor', '#client-invite', '#qr-editor'].some(function (id) { var d = $(id); return d && !d.hidden; });
   }
   function refreshCurrentView() {
     if (anyDrawerOpen()) return; // don't redraw underneath a form someone is filling in
@@ -1210,6 +1211,7 @@
     else if (currentView === 'stores') loadStores(true);
     else if (currentView === 'team') loadTeam(true);
     else if (currentView === 'subscribers') loadSubscribers(true);
+    else if (currentView === 'clients' && window.PSClients) window.PSClients.load(true);
   }
   function refreshBadges() {
     if (currentView !== 'chat') api('/api/admin/chat?status=open').then(function (d) { setUnread(d.unread, d.open, d); }).catch(function () {});
@@ -1226,6 +1228,7 @@
     if (currentView !== 'subscribers') {
       api('/api/newsletter?status=subscribed&q=__none__').then(function (d) { setSubBadge(d.counts); }).catch(function () {});
     }
+    if (currentView !== 'clients' && window.PSClients) window.PSClients.badge();
     api('/api/auth', { allow401: false }).then(function (d) {
       if (!me || d.name !== me.name || d.role !== me.role) {
         var lostTeam = me && me.role === 'super' && d.role !== 'super';
@@ -1710,6 +1713,9 @@
     clearTimeout(subTimer);
     subTimer = setTimeout(function () { subs.q = e.target.value.trim(); loadSubscribers(); }, 300);
   });
+
+  // Shared helpers for /admin/clients.js (client onboarding and payments).
+  window.PSAdmin = { $: $, $$: $$, el: el, api: api, toast: toast, ICON: ICON, fmtDate: fmtDate, openDrawer: openDrawer, closeDrawer: closeDrawer, uploadFile: uploadFile, me: function () { return me; } };
 
   /* ---------- Start ---------- */
   api('/api/auth', { allow401: true }).then(showApp).catch(function (err) {

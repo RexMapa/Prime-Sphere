@@ -3,13 +3,19 @@
 // POST   { name, email, password, role }  -> create an admin
 // PATCH  { id, name?, role?, active?, password? }
 // DELETE ?id=<adminId>
+// ?scope=clients | ?scope=payment-methods  client onboarding and payments (any admin)
 import { db } from '../../lib/db.js';
 import { route, send, readJson, requireFetchHeader, HttpError, str } from '../../lib/http.js';
-import { requireSuper, toAdmin, hashPassword, checkPasswordRules, ROLES } from '../../lib/auth.js';
+import { requireSuper, requireAdmin, toAdmin, hashPassword, checkPasswordRules, ROLES } from '../../lib/auth.js';
+import { handleClientsAdmin } from '../../lib/client-admin-api.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default route(['GET', 'POST', 'PATCH', 'DELETE'], async (req, res) => {
+  // Client accounts and payment QR codes live here too (any admin), see lib/client-admin-api.js.
+  const scope = new URL(req.url, 'http://x').searchParams.get('scope');
+  if (scope === 'clients' || scope === 'payment-methods') return handleClientsAdmin(req, res, await requireAdmin(req), scope);
+
   const me = await requireSuper(req);
   const { query } = db();
 

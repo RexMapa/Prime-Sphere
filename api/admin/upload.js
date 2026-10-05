@@ -23,7 +23,8 @@ export default route(['POST'], async (req, res) => {
 
   const base = String(new URL(req.url, 'http://x').searchParams.get('filename') || 'screenshot')
     .toLowerCase().replace(/\.[a-z0-9]+$/, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50) || 'screenshot';
-  const folder = new URL(req.url, 'http://x').searchParams.get('folder') === 'content' ? 'content' : 'stores';
+  const f = new URL(req.url, 'http://x').searchParams.get('folder');
+  const folder = f === 'content' ? 'content' : f === 'payments' ? 'payments' : 'stores';
   const blob = await put(`${folder}/${base}.${TYPES[type]}`, buf, { access: 'public', contentType: type, addRandomSuffix: true, token: TOKEN });
   send(res, 201, { url: blob.url });
 });

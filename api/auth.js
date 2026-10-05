@@ -3,13 +3,19 @@
 // POST /api/auth?action=password  { current, password }   change your own password
 // POST /api/auth?action=profile   { name }                 change your display name
 // GET  /api/auth                  -> { id, name, email, role, isOwner } when signed in
+// ?scope=client                    client accounts, see lib/client-api.js
 import { db, ensureSchema } from '../lib/db.js';
 import { route, send, readJson, ipHash, requireFetchHeader, HttpError, str } from '../lib/http.js';
 import { login, setSession, clearSession, getAdmin, requireAdmin, toAdmin, hashPassword, checkPasswordRules } from '../lib/auth.js';
+import { handleClient } from '../lib/client-api.js';
 
 const MAX_FAILS = 8;
 
 export default route(['GET', 'POST'], async (req, res) => {
+  // Client accounts (onboarding and payments) share this function to stay under Vercel's function limit.
+  const params = new URL(req.url, 'http://x').searchParams;
+  if (params.get('scope') === 'client') return handleClient(req, res, params.get('action'));
+
   if (req.method === 'GET') {
     const a = await getAdmin(req);
     if (!a) return send(res, 401, { error: 'Not signed in.' });
