@@ -565,8 +565,30 @@
     art.appendChild(info);
     return art;
   }
+  // Service pages list only the roles they need (data-roles="developer" etc.).
+  // Members without ticked roles are matched from their role text, e.g. "Shopify Developer".
+  function memberGroups(m) {
+    if (Array.isArray(m.groups) && m.groups.length) return m.groups;
+    var r = String(m.role || '').toLowerCase(), g = [];
+    if (/owner|founder|\bceo\b/.test(r)) g.push('owner');
+    if (/develop/.test(r)) g.push('developer');
+    if (/multimedia/.test(r)) g.push('multimedia');
+    if (/social/.test(r)) g.push('social');
+    if (/\bads?\b|advertis/.test(r)) g.push('ads');
+    return g;
+  }
+  var MANAGER_GROUPS = ['multimedia', 'social', 'ads'];
+  function matchesRoles(m, roles) {
+    var g = memberGroups(m);
+    return roles.some(function (r) {
+      if (r === 'manager') return /manager/i.test(m.role || '') || g.some(function (x) { return MANAGER_GROUPS.indexOf(x) !== -1; });
+      return g.indexOf(r) !== -1;
+    });
+  }
   function renderTeam(box, items) {
     var section = box.closest('section');
+    var roles = (box.getAttribute('data-roles') || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+    if (roles.length) items = items.filter(function (m) { return matchesRoles(m, roles); });
     if (!items.length) { if (section) section.hidden = true; return; }
     if (section) section.hidden = false;
     var limit = parseInt(box.getAttribute('data-limit'), 10) || 0;

@@ -586,3 +586,11 @@ button.muted-link { background: none; border: 0; padding: 0; cursor: pointer; fo
   .cl-timeline li { font-size: 11px; }
   .qr-form-grid { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Team member: which service pages they show on */
+.check-pick { display: grid; gap: 8px; margin-top: 8px; }
+.check-pick-item { display: flex; align-items: flex-start; gap: 12px; padding: 10px 12px; border: 1px solid var(--line-2); border-radius: 8px; cursor: pointer; }
+.check-pick-item input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--accent); flex: none; }
+.check-pick-item span { display: flex; flex-direction: column; gap: 2px; }
+.check-pick-item small { color: var(--muted); font-size: 12px; }
+.check-pick-item:has(input:checked) { border-color: var(--accent); background: rgba(30,144,255,0.1); }

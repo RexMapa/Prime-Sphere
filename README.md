@@ -58,6 +58,20 @@ with their bio and social links. The homepage shows up to 4: the ones with "Show
 plus a "Meet the Whole Team" button when there are more. With no visible members, both sections stay hidden.
 These are public profiles only; admin logins are still managed in admin > Team.
 
+Each service page also has a "Your Team" section, filled by the roles ticked under **Shows on these service pages**:
+
+| Role ticked | Service pages |
+| --- | --- |
+| Developer | Shopify Development, Store Management, SEO & Content, Email Marketing |
+| Multimedia Manager | Design & Creative |
+| Social Media Manager | Social Media |
+| Ads Manager | Marketing & Ads |
+| Owner and every manager | Ongoing Support |
+
+A member can have more than one role. If no roles are ticked, the site matches their Role text instead
+("Shopify Developer" counts as Developer, "Founder" as Owner, any role with "Manager" shows on Ongoing Support).
+A service page with nobody matching hides its team section.
+
 ## Live chat
 
 The chat button sits on the bottom right of every public page. When a visitor sends a message it appears in

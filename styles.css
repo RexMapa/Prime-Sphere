@@ -1308,3 +1308,5 @@ button.round-link { cursor: pointer; font: inherit; padding: 0; }
   .member-photo img, .member-photo::before, .member-social li { transition: none; }
   .member:hover .member-photo img { transform: none; }
 }
+.team--service { padding-top: 112px; }
+@media (max-width: 860px) { .team--service { padding-top: 80px; } }

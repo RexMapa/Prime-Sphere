@@ -786,6 +786,13 @@
       fields: [
         { key: 'name', label: 'Full name*', type: 'text', max: 80, required: true, placeholder: 'e.g. Juan Dela Cruz' },
         { key: 'role', label: 'Role*', type: 'text', max: 80, required: true, placeholder: 'e.g. Shopify Developer' },
+        { key: 'groups', label: 'Shows on these service pages', type: 'checks', hint: 'Tick every role that fits. Owner and all managers also show on Ongoing Support.', options: [
+          ['owner', 'Owner', 'Ongoing Support'],
+          ['developer', 'Developer', 'Shopify Development, Store Management, SEO & Content, Email Marketing'],
+          ['multimedia', 'Multimedia Manager', 'Design & Creative, Ongoing Support'],
+          ['social', 'Social Media Manager', 'Social Media, Ongoing Support'],
+          ['ads', 'Ads Manager', 'Marketing & Ads, Ongoing Support']
+        ] },
         { key: 'photo', label: 'Photo', type: 'image', hint: 'Portrait (taller than wide), about 800 x 1000. Faces near the top work best. Without a photo, their initials are shown.' },
         { key: 'bio', label: 'Short bio (optional)', type: 'textarea', max: 280, placeholder: 'One or two sentences about what they do', hint: 'Shown on the About page under their name.' },
         { key: 'linkedin', label: 'LinkedIn (optional)', type: 'url', placeholder: 'https://www.linkedin.com/in/...' },
@@ -921,6 +928,19 @@
       file.addEventListener('change', function () { var fl = file.files[0]; file.value = ''; if (fl) uploadInto(row, fl, { status: status, bar: bar, urlInput: urlInput }, 'content'); });
       return el('div', { class: 'field' }, [el('span', { text: f.label }), f.hint ? el('small', { text: f.hint }) : null, row]);
     }
+    if (f.type === 'checks') {
+      var on = Array.isArray(value) ? value : [];
+      return el('fieldset', { class: 'field', style: 'border:0;padding:0;margin:0' }, [
+        el('legend', { text: f.label, style: 'margin-bottom:6px' }),
+        f.hint ? el('small', { text: f.hint }) : null,
+        el('div', { class: 'check-pick' }, f.options.map(function (o) {
+          return el('label', { class: 'check-pick-item' }, [
+            el('input', { type: 'checkbox', value: o[0], checked: on.indexOf(o[0]) !== -1, 'data-check': f.key }),
+            el('span', {}, [el('strong', { text: o[1] }), el('small', { text: o[2] })])
+          ]);
+        }))
+      ]);
+    }
     if (f.type === 'icon') {
       return el('fieldset', { class: 'field', style: 'border:0;padding:0;margin:0' }, [
         el('legend', { text: f.label, style: 'margin-bottom:6px' }),
@@ -977,6 +997,7 @@
     var data = {};
     T.fields.forEach(function (f) {
       if (f.type === 'icon') { var c = $('input[name="icon"]:checked', cForm); data.icon = c ? c.value : 'layout'; return; }
+      if (f.type === 'checks') { data[f.key] = $$('input[data-check="' + f.key + '"]:checked', cForm).map(function (x) { return x.value; }); return; }
       var inp = $('[data-key="' + f.key + '"]', cForm);
       var v = inp ? inp.value.trim() : '';
       data[f.key] = f.type === 'list' ? v.split('\n').map(function (x) { return x.trim(); }).filter(Boolean) : v;
