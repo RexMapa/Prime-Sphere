@@ -6,7 +6,16 @@
   var $$ = function (s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); };
 
   /* ---------- Page load sequence ---------- */
-  function onLoaded() { document.body.classList.add('is-loaded'); }
+  // While the intro splash is up, the hero waits and plays as the curtain opens.
+  var loadedOnce = false;
+  function start() { if (loadedOnce) return; loadedOnce = true; document.body.classList.add('is-loaded'); }
+  function onLoaded() {
+    var root = document.documentElement;
+    if (root.classList.contains('ps-splash-on') && !root.classList.contains('ps-splash-reveal')) {
+      window.addEventListener('ps:splash-reveal', start, { once: true });
+      setTimeout(start, 5000); // never wait forever
+    } else start();
+  }
   if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(onLoaded);
     setTimeout(onLoaded, 1200); // fallback if fonts are slow

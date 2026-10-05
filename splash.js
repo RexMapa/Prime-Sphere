@@ -6,7 +6,7 @@
   var KEY = 'ps-splash-seen';
   var root = document.documentElement;
   try {
-    if (sessionStorage.getItem(KEY)) { root.setAttribute('data-splash', 'done'); return; }
+    if (sessionStorage.getItem(KEY)) { root.setAttribute('data-splash', 'done'); root.classList.add('ps-page-in'); return; }
     sessionStorage.setItem(KEY, '1');
   } catch (e) { /* storage blocked: the intro just plays */ }
 
@@ -61,6 +61,12 @@
   splash.innerHTML = html;
   root.appendChild(splash); // <body> doesn't exist yet; <html> can hold the fixed overlay
   root.classList.add('ps-splash-on');
+
+  // The page underneath starts its own entrance as the curtain opens.
+  setTimeout(function () {
+    root.classList.add('ps-splash-reveal');
+    try { window.dispatchEvent(new Event('ps:splash-reveal')); } catch (e) {}
+  }, reduced ? 900 : 3200);
 
   setTimeout(function () {
     root.setAttribute('data-splash', 'done');

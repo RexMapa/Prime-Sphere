@@ -1,0 +1,285 @@
+/* ==========================================================================
+   PrimeSphere premium layer. Loaded after styles.css on every public page.
+   Same language as the member portal and client space: deep navy, drifting
+   aurora, glass surfaces with a lit top edge, gradient actions with a light
+   sweep, and one orchestrated entrance after the splash.
+   ========================================================================== */
+:root {
+  --ps-cyan: #1FBEF8;
+  --ps-ice: #7FD8FF;
+  --ps-blue: #0589ED;
+  --ps-grad: linear-gradient(135deg, #3CCBFF 0%, #1FA6F5 45%, #0589ED 100%);
+  --ps-glass: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015));
+  --ps-glass-line: rgba(255, 255, 255, 0.1);
+  --ps-ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+::selection { background: rgba(31, 190, 248, 0.32); color: #fff; }
+
+/* ---------- Atmosphere (injected by premium.js) ---------- */
+.ps-atmos { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.ps-atmos i { position: absolute; border-radius: 50%; filter: blur(80px); will-change: transform; }
+.ps-atmos i:nth-child(1) { width: 720px; height: 720px; left: -240px; top: -260px; background: radial-gradient(circle, rgba(5, 137, 237, 0.34), transparent 68%); animation: ps-drift 18s ease-in-out infinite alternate; }
+.ps-atmos i:nth-child(2) { width: 620px; height: 620px; right: -220px; top: 30%; background: radial-gradient(circle, rgba(31, 190, 248, 0.2), transparent 68%); animation: ps-drift 22s ease-in-out -7s infinite alternate-reverse; }
+.ps-atmos i:nth-child(3) { width: 520px; height: 520px; left: 30%; bottom: -260px; background: radial-gradient(circle, rgba(60, 90, 235, 0.18), transparent 68%); animation: ps-drift 26s ease-in-out -3s infinite alternate; }
+.ps-atmos b {
+  position: absolute; inset: 0;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 64px 64px;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 0%, #000 0%, transparent 62%);
+  mask-image: radial-gradient(ellipse at 50% 0%, #000 0%, transparent 62%);
+}
+@keyframes ps-drift { from { transform: translate3d(-3%, -2%, 0) scale(1); } to { transform: translate3d(3%, 3%, 0) scale(1.08); } }
+body { background: #050B18; }
+.section--alt { background: linear-gradient(180deg, rgba(8, 17, 36, 0.72), rgba(8, 17, 36, 0.5)); border-block-color: rgba(255, 255, 255, 0.06); }
+
+/* Scroll progress: a lit line instead of a flat bar. */
+.progress { height: 2px; background: linear-gradient(90deg, #0589ED, #7FD8FF); box-shadow: 0 0 12px rgba(31, 190, 248, 0.9); }
+
+/* ==========================================================================
+   Header: a floating glass capsule once you scroll
+   ========================================================================== */
+.header { padding-top: 10px; transition: padding 0.4s var(--ease); }
+.header.is-scrolled { background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; border-bottom-color: transparent; padding-top: 8px; }
+.header .nav {
+  position: relative; height: 66px; gap: 20px;
+  border: 1px solid transparent; border-radius: 20px;
+  transition: background 0.4s, border-color 0.4s, box-shadow 0.4s, height 0.4s var(--ease);
+}
+.header.is-scrolled .nav {
+  height: 62px;
+  background: linear-gradient(180deg, rgba(10, 20, 42, 0.82), rgba(6, 13, 30, 0.74));
+  border-color: rgba(255, 255, 255, 0.1);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: 0 18px 50px -24px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+.header.is-scrolled .nav::after {
+  content: ""; position: absolute; left: 14%; right: 14%; bottom: -1px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(127, 216, 255, 0.55), transparent);
+}
+.brand { flex: none; }
+.brand img { transition: transform 0.5s var(--ease), filter 0.4s; }
+.brand:hover img { transform: rotate(-8deg) scale(1.05); filter: drop-shadow(0 0 10px rgba(31, 190, 248, 0.6)); }
+.brand span { white-space: nowrap; }
+.brand b { background: linear-gradient(100deg, #7FD8FF, #1FBEF8 55%, #0589ED); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+
+/* Links sit in one quiet track; a glow pill glides to whatever you point at. */
+.nav-links { position: relative; gap: 2px; padding: 4px; border-radius: 999px; font-size: 14px; }
+.nav-links > li { position: relative; z-index: 1; }
+.nav-links a { padding: 8px 14px; border-radius: 999px; white-space: nowrap; }
+.nav-links a::after { display: none; }
+.nav-links a.is-active { color: #fff; }
+.nav-dd-head { gap: 0; }
+.nav-dd-head > a { padding-right: 6px; }
+.nav-glide {
+  position: absolute; top: 4px; bottom: 4px; left: 0; width: 0; z-index: 0; border-radius: 999px; pointer-events: none;
+  background: linear-gradient(180deg, rgba(31, 190, 248, 0.16), rgba(5, 137, 237, 0.07));
+  box-shadow: inset 0 0 0 1px rgba(31, 190, 248, 0.24), 0 8px 22px -14px rgba(31, 190, 248, 0.9);
+  opacity: 0; transition: transform 0.45s var(--ps-ease-out), width 0.45s var(--ps-ease-out), opacity 0.3s;
+}
+.nav-glide.is-on { opacity: 1; }
+.nav-links .nav-client-item { display: none; } /* desktop uses the button in .nav-actions */
+
+.nav-actions { gap: 10px; flex: none; }
+.nav-login {
+  display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 16px; border-radius: 12px; white-space: nowrap;
+  font-size: 14px; font-weight: 600; color: #D5ECFF;
+  border: 1px solid rgba(127, 216, 255, 0.24); background: rgba(31, 190, 248, 0.06);
+  transition: color 0.25s, border-color 0.25s, background 0.25s, box-shadow 0.3s;
+}
+.nav-login svg { color: var(--ps-ice); transition: transform 0.35s var(--ease); }
+.nav-login:hover { color: #fff; border-color: rgba(127, 216, 255, 0.55); background: rgba(31, 190, 248, 0.12); box-shadow: 0 10px 24px -14px rgba(31, 190, 248, 0.9); }
+.nav-login:hover svg { transform: translateY(-1px) rotate(-6deg); }
+.nav-actions .btn.nav-cta {
+  min-height: 42px; height: 42px; padding: 0 18px; gap: 8px; white-space: nowrap; border: 0; color: #031325;
+  background: var(--ps-grad); border-radius: 12px; font-weight: 700;
+  box-shadow: 0 12px 26px -12px rgba(5, 137, 237, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.42);
+}
+.nav-actions .btn.nav-cta:hover { background: var(--ps-grad); }
+.nav-actions .btn--icon { display: none; }
+.menu-toggle { border-radius: 12px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.1); }
+
+/* Services dropdown on glass */
+.nav-dd-menu::before {
+  background: linear-gradient(170deg, rgba(14, 28, 56, 0.97), rgba(7, 15, 33, 0.97)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important; border-radius: 18px !important;
+  box-shadow: 0 30px 70px -24px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Medium screens: keep everything on one line. */
+@media (max-width: 1240px) and (min-width: 861px) {
+  .nav-links a { padding: 8px 10px; font-size: 13.5px; }
+  .nav-login span { display: none; }
+  .nav-login { width: 42px; padding: 0; justify-content: center; }
+}
+@media (max-width: 1180px) and (min-width: 861px) {
+  .nav-actions .btn.nav-cta { display: inline-flex; padding: 0 14px; }
+  .nav-links a { padding: 8px 8px; font-size: 13px; }
+  .header .nav { gap: 12px; }
+}
+@media (max-width: 1040px) and (min-width: 861px) {
+  .brand span { display: none; }
+  .nav-actions .btn.nav-cta svg { display: none; }
+}
+@media (max-width: 860px) {
+  .header .nav { height: 64px; }
+  .header .nav { gap: 10px; }
+  .nav-links {
+    position: fixed !important; top: 84px !important; left: 12px !important; right: 12px !important; gap: 0 !important;
+    border-radius: 18px !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; padding: 8px 18px 16px !important;
+    background: linear-gradient(170deg, #0C1830, #070F22) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+    box-shadow: 0 30px 70px -20px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+  .nav-links > li { opacity: 0; transform: translateY(-6px); transition: opacity 0.4s var(--ease), transform 0.5s var(--ease); }
+  .nav-links.is-open > li { opacity: 1; transform: none; }
+  .nav-links.is-open > li:nth-child(2) { transition-delay: 0.04s; } .nav-links.is-open > li:nth-child(3) { transition-delay: 0.07s; }
+  .nav-links.is-open > li:nth-child(4) { transition-delay: 0.1s; } .nav-links.is-open > li:nth-child(5) { transition-delay: 0.13s; }
+  .nav-links.is-open > li:nth-child(6) { transition-delay: 0.16s; } .nav-links.is-open > li:nth-child(7) { transition-delay: 0.19s; }
+  .nav-links.is-open > li:nth-child(n + 8) { transition-delay: 0.22s; }
+  .nav-links a { border-radius: 0; padding: 16px 4px; }
+  .nav-glide { display: none; }
+  .nav-links .nav-client-item { display: block; }
+  .nav-links .nav-client-item a { display: flex; align-items: center; gap: 10px; color: #D5ECFF; }
+  .nav-login { display: none; }
+  .nav-actions .btn--icon { display: inline-flex; width: 44px; min-height: 44px; height: 44px; border-radius: 12px; background: var(--ps-grad); color: #031325; }
+}
+
+/* ==========================================================================
+   Buttons: the portal's gradient, lift and light sweep
+   ========================================================================== */
+.btn {
+  border-radius: 12px; color: #031325; font-weight: 700; isolation: isolate;
+  background: var(--ps-grad);
+  box-shadow: 0 14px 30px -14px rgba(5, 137, 237, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.42);
+  transition: transform 0.25s var(--ease), box-shadow 0.3s, filter 0.25s;
+}
+.btn::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: -60%; width: 40%; z-index: -1; pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.5), transparent); transform: skewX(-20deg);
+  transition: left 0.75s ease;
+}
+.btn:hover { background: var(--ps-grad); transform: translateY(-2px); filter: brightness(1.05); box-shadow: 0 18px 36px -14px rgba(31, 190, 248, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.5); }
+.btn:hover::after { left: 130%; }
+.btn:active { transform: translateY(0) scale(0.985); }
+.btn--outline {
+  color: #EAF2FF; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(127, 216, 255, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.btn--outline::after { background: linear-gradient(100deg, transparent, rgba(127, 216, 255, 0.22), transparent); }
+.btn--outline:hover { background: rgba(31, 190, 248, 0.1); border-color: rgba(127, 216, 255, 0.7); box-shadow: 0 14px 30px -16px rgba(31, 190, 248, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.08); }
+.btn:disabled { opacity: 0.6; cursor: progress; transform: none; }
+
+.orbit-btn::before { border-top-color: var(--ps-cyan); border-right-color: var(--ps-ice); box-shadow: 0 0 22px -6px rgba(31, 190, 248, 0.5); }
+.orbit-btn::after { background: var(--ps-grad); }
+.orbit-btn:hover { color: #031325; }
+.round-link { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: var(--ps-ice); }
+.project:hover .round-link { background: var(--ps-grad); color: #031325; border-color: transparent; box-shadow: 0 10px 22px -10px rgba(31, 190, 248, 0.9); }
+.text-link { color: var(--ps-ice); }
+
+.to-top, .chat-launcher { background: var(--ps-grad) !important; color: #031325 !important; box-shadow: 0 14px 34px -10px rgba(5, 137, 237, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.45) !important; }
+.chat-launcher::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 1px solid rgba(127, 216, 255, 0.55); animation: ps-ring 2.8s ease-out infinite; pointer-events: none; }
+@keyframes ps-ring { 0% { transform: scale(0.9); opacity: 0.9; } 100% { transform: scale(1.35); opacity: 0; } }
+
+/* ==========================================================================
+   Glass surfaces with a lit top edge and a spotlight that follows the pointer
+   (premium.js sets --mx / --my on .ps-spot elements).
+   ========================================================================== */
+.service, .project-card, .blog-card, .case-card, .mvg-card, .svc-feature, .svc-other, .contact-card, .quote, .store-shot, .unsub-card, .booking-form, .work-band-inner {
+  border-color: var(--ps-glass-line) !important;
+}
+.service, .blog-card, .case-card, .mvg-card, .svc-feature, .svc-other, .contact-card {
+  background-color: transparent !important;
+  background-image:
+    radial-gradient(420px circle at var(--mx, 50%) var(--my, -40%), rgba(31, 190, 248, 0.1), transparent 45%),
+    var(--ps-glass) !important;
+  border-radius: 18px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 24px 50px -32px rgba(0, 0, 0, 0.9);
+}
+.project-card {
+  background: linear-gradient(160deg, rgba(16, 30, 58, 0.94), rgba(10, 20, 42, 0.94)) !important;
+  border-radius: 14px; border: 1px solid var(--ps-glass-line); border-left-width: 2px;
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  box-shadow: 0 24px 50px -28px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+.project:hover .project-card { border-left-color: var(--ps-cyan) !important; }
+.project-media { border-radius: 16px; }
+.service { padding: 36px 30px; }
+.service::before { background: linear-gradient(90deg, #0589ED, #7FD8FF); box-shadow: 0 0 14px rgba(31, 190, 248, 0.8); }
+.service:hover, .blog-card:hover, .case-card:hover, .mvg-card:hover, .svc-other:hover, .svc-feature:hover {
+  border-color: rgba(127, 216, 255, 0.32) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 30px 60px -30px rgba(5, 137, 237, 0.55);
+}
+.service-icon, .svc-other-icon, .mvg-icon { transition: color 0.3s, transform 0.5s var(--ease), filter 0.4s; }
+.service:hover .service-icon { color: var(--ps-ice); transform: translateY(-3px); filter: drop-shadow(0 0 10px rgba(31, 190, 248, 0.6)); }
+.store-shot { border-radius: 14px; transition: transform 0.6s var(--ease), box-shadow 0.5s, border-color 0.4s; }
+.store:hover .store-shot { transform: translateY(-6px); border-color: rgba(127, 216, 255, 0.35) !important; box-shadow: 0 34px 60px -30px rgba(5, 137, 237, 0.6); }
+.slider { border-radius: 18px; border-color: rgba(127, 216, 255, 0.22); box-shadow: 0 40px 90px -40px rgba(5, 137, 237, 0.55); }
+.portrait, .process-photo img { border-radius: 16px; }
+
+/* Lit top edge on the larger glass panels */
+.service::after, .case-card::after, .mvg-card::after, .contact-card::after, .svc-feature::after {
+  content: ""; position: absolute; top: 0; left: 12%; right: 12%; height: 1px; pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(127, 216, 255, 0.6), transparent);
+  opacity: 0.55; transition: opacity 0.4s;
+}
+.case-card, .mvg-card, .contact-card, .svc-feature { position: relative; }
+.service:hover::after, .case-card:hover::after, .mvg-card:hover::after, .svc-feature:hover::after { opacity: 1; }
+
+/* Headline accents: the same ice-to-blue light as the sign-in screens */
+.hero h1 .hl, .page-hero h1 .hl, h2 .hl {
+  background: linear-gradient(100deg, #7FD8FF 0%, #1FBEF8 45%, #0589ED 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero h1 .dot { -webkit-text-fill-color: #1FBEF8; text-shadow: 0 0 24px rgba(31, 190, 248, 0.7); }
+.eyebrow { color: var(--ps-ice); }
+.eyebrow::before { background: linear-gradient(90deg, #0589ED, #7FD8FF); box-shadow: 0 0 10px rgba(31, 190, 248, 0.8); }
+.reveal .eyebrow::before, .eyebrow.reveal::before { transform-origin: left; transform: scaleX(0); transition: transform 0.9s var(--ease) 0.2s; }
+.reveal.is-in .eyebrow::before, .eyebrow.reveal.is-in::before { transform: none; }
+.ghost-word { -webkit-text-stroke: 1px rgba(127, 216, 255, 0.1); }
+
+/* Form fields on glass */
+.form input, .form textarea, .form select, .field input, .field textarea, .newsletter-form input {
+  border-radius: 12px !important; background: rgba(255, 255, 255, 0.04) !important; border-color: rgba(255, 255, 255, 0.13) !important;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+.form input:focus, .form textarea:focus, .form select:focus, .field input:focus, .field textarea:focus, .newsletter-form input:focus {
+  outline: none; border-color: #1FBEF8 !important; background: rgba(255, 255, 255, 0.07) !important; box-shadow: 0 0 0 4px rgba(31, 190, 248, 0.16);
+}
+.chip, .filter { border-radius: 999px; transition: border-color 0.25s, background 0.25s, color 0.25s; }
+
+/* Client logo marquee fades out at the edges */
+.marquee { -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); }
+
+/* Footer: a lit horizon line */
+.footer { position: relative; border-top-color: rgba(255, 255, 255, 0.07); background: linear-gradient(180deg, rgba(5, 11, 24, 0), rgba(5, 11, 24, 0.6)); }
+.footer::before { content: ""; position: absolute; top: -1px; left: 15%; right: 15%; height: 1px; background: linear-gradient(90deg, transparent, rgba(127, 216, 255, 0.55), transparent); }
+.footer-links a { transition: color 0.25s; }
+.footer-links a:hover { color: #fff; }
+
+/* ==========================================================================
+   Motion
+   ========================================================================== */
+/* Scroll reveals come in from a soft blur, staggered inside grids (premium.js sets --d). */
+.reveal { filter: blur(8px); transition: opacity 0.95s var(--ease), transform 0.95s var(--ease), filter 0.95s var(--ease); transition-delay: var(--d, 0s); }
+.reveal.is-in { filter: none; }
+.reveal-img::after { background: linear-gradient(180deg, #071022, #050B18) !important; }
+
+/* Page-to-page: a short fade so moving around feels continuous. */
+html.ps-leaving body { opacity: 0; transition: opacity 0.22s ease; }
+@keyframes ps-page-in { from { opacity: 0; } to { opacity: 1; } }
+html.ps-page-in body { animation: ps-page-in 0.45s ease both; }
+
+/* Magnetic buttons ease back when the pointer leaves */
+.ps-magnet { transition: transform 0.45s var(--ease) !important; }
+
+@media (max-width: 420px) {
+  .brand span { font-size: 16px; }
+  .brand img { height: 30px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-links > li { opacity: 1 !important; transform: none !important; }
+  .ps-atmos i, .chat-launcher::after { animation: none !important; }
+  .reveal { filter: none !important; }
+  .nav-glide { transition: none; }
+  html.ps-leaving body, html.ps-page-in body { animation: none; transition: none; opacity: 1; transform: none; }
+}
