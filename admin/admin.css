@@ -594,3 +594,9 @@ button.muted-link { background: none; border: 0; padding: 0; cursor: pointer; fo
 .check-pick-item span { display: flex; flex-direction: column; gap: 2px; }
 .check-pick-item small { color: var(--muted); font-size: 12px; }
 .check-pick-item:has(input:checked) { border-color: var(--accent); background: rgba(30,144,255,0.1); }
+
+.cl-brand-entries { display: grid; gap: 10px; }
+.cl-brand-colour { display: flex; align-items: center; gap: 10px; }
+.cl-brand-swatch { width: 30px; height: 30px; flex: 0 0 30px; border-radius: 8px; border: 1px solid rgba(255,255,255,.2); }
+.cl-brand-claim { padding: 12px; border: 1px solid rgba(255,255,255,.12); border-radius: 9px; line-height: 1.6; }
+.cl-brand-claim--danger { color: #ff9b90; border-color: rgba(255,122,110,.4); background: rgba(255,122,110,.05); }

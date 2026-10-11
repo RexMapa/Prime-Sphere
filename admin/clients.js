@@ -375,11 +375,22 @@
           var v = o[f.key];
           var txt = Array.isArray(v) ? '' : v ? String(v) : '';
           var dd;
-          if (Array.isArray(v) && v.length) dd = el('div', { class: 'chips' }, v.map(function (x) { return el('span', { class: 'chip', text: x }); }));
+          if (Array.isArray(v) && v.length && (f.type === 'list' || f.type === 'upload')) {
+            dd = el('div', { class: 'cl-brand-entries' }, v.map(function (entry) {
+              var colour = f.key === 'brandColours' && /^(.*) — (#[0-9a-f]{6})$/i.exec(entry);
+              if (colour) return el('div', { class: 'cl-brand-colour' }, [
+                el('span', { class: 'cl-brand-swatch', style: 'background-color:' + colour[2], 'aria-hidden': 'true' }),
+                el('span', { text: colour[1] + ' · ' + colour[2].toUpperCase() })
+              ]);
+              var link = (f.key === 'assetFolders' || f.type === 'upload') && /^(.*) — (https?:\/\/\S+)$/.exec(entry);
+              if (link) return el('a', { href: link[2], target: '_blank', rel: 'noopener', text: link[1] });
+              return el('div', { class: f.danger ? 'cl-brand-claim cl-brand-claim--danger' : 'cl-brand-claim', text: entry });
+            }));
+          } else if (Array.isArray(v) && v.length) dd = el('div', { class: 'chips' }, v.map(function (x) { return el('span', { class: 'chip', text: x }); }));
           else if (txt && f.type === 'url' && /^(https?:\/\/)?[^\s]+\.[^\s]+$/.test(txt)) dd = el('a', { href: /^https?:/.test(txt) ? txt : 'https://' + txt, target: '_blank', rel: 'noopener', text: txt });
           else if (txt && f.type === 'email') dd = el('a', { href: 'mailto:' + txt, text: txt });
           else dd = document.createTextNode(txt || '-');
-          return el('div', { class: 'detail-cell' + (f.type === 'textarea' || f.type === 'multi' ? ' detail-cell--wide' : '') }, [el('dt', { text: f.label }), el('dd', {}, [dd])]);
+          return el('div', { class: 'detail-cell' + (f.type === 'textarea' || f.type === 'multi' || f.type === 'list' || f.type === 'upload' ? ' detail-cell--wide' : '') }, [el('dt', { text: f.label }), el('dd', {}, [dd])]);
         }))
       ]);
     })));
