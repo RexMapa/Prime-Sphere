@@ -104,6 +104,18 @@
     $('#cl-count-active').textContent = c.active || '';
     var list = $('#cl-list');
     var items = S.items.filter(matches);
+    if (S.filter === 'action') {
+      items = items.flatMap(function (client) {
+        var requests = (client.onboarding || {}).accessRequests || {};
+        var ids = Object.keys(requests).filter(function (id) { return requests[id].status === 'help'; });
+        var result = ids.map(function (id) {
+          var config = (window.PS_ACCESS_REQUESTS || []).find(function (c) { return c.id === id; });
+          return Object.assign({}, client, { requestId: id, requestTitle: config ? config.title : id });
+        });
+        if (client.status === 'review' || client.status === 'payment_review' || (!ids.length && client.chatUnread)) result.push(client);
+        return result;
+      });
+    }
     if (!items.length) {
       var txt = S.q ? 'No clients match "' + S.q + '".'
         : S.filter === 'action' ? 'Nothing needs you right now. New onboarding and payment screenshots show up here.'
@@ -113,9 +125,9 @@
       list.replaceChildren.apply(list, items.map(function (cl) {
         var biz = cl.company || (cl.onboarding && cl.onboarding.businessName) || '';
         var needs = cl.status === 'review' || cl.status === 'payment_review' || needsHelp(cl);
-        return el('button', { type: 'button', class: 'msg-item cl-item', 'data-status': needs ? 'new' : 'read', 'aria-current': String(S.selected === cl.id), onclick: function () { select(cl.id); } }, [
+        return el('button', { type: 'button', class: 'msg-item cl-item', 'data-status': needs ? 'new' : 'read', 'aria-current': String(S.selected === cl.id && (!cl.requestId || S.requestTopic === cl.requestId)), onclick: function () { S.requestTopic = cl.requestId || null; select(cl.id); } }, [
           el('span', { class: 'dot' + (needs ? '' : ' dot--off') }),
-          el('span', { class: 'msg-name', text: cl.name + (biz ? ', ' + biz : '') }),
+          el('span', { class: 'msg-name', text: cl.name + (cl.requestTitle ? ' · ' + cl.requestTitle : (biz ? ', ' + biz : '')) }),
           el('span', { class: 'msg-date', text: fmtDate(cl.updatedAt) }),
           el('span', { class: 'msg-sub cl-sub' }, [pill(cl.status), needsHelp(cl) ? el('span', { class: 'cl-pill', 'data-tone': 'warn', text: cl.chatUnread ? cl.chatUnread + ' unread messages' : 'Help requested' }) : null, cl.active ? null : el('span', { class: 'cl-pill', 'data-tone': 'danger', text: 'Disabled' }), el('span', { text: cl.email })])
         ]);
@@ -356,7 +368,7 @@
 
   function supportPanel(c) {
     if (!window.PSSupportChat) return el('p', { text: 'Reload this page to load support chat.' });
-    var panel = window.PSSupportChat({ admin: true, url: ENDPOINT + '&action=support-chat&id=' + c.id });
+    var panel = window.PSSupportChat({ admin: true, url: ENDPOINT + '&action=support-chat&id=' + c.id, topic: S.requestTopic || 'general', requests: Object.keys((c.onboarding || {}).accessRequests || {}).filter(function (id) { return c.onboarding.accessRequests[id].status === 'help'; }) });
     window.psAdminSupport = panel;
     setTimeout(function () { panel.start(); }, 0);
     return panel;
@@ -369,7 +381,7 @@
     return el('section', { class: 'cl-access-panel' }, [
       el('h3', { text: 'Access Requests' }),
       el('p', { class: 'muted', text: completed + ' of ' + configs.length + ' completed' + (helpCount ? ' · ' + helpCount + ' help requested' : '') }),
-      el('div', { class: 'cl-access-list' }, configs.map(function (config) {
+      el('div', { class: 'cl-access-list' }, configs.filter(function (config) { return requests[config.id] && requests[config.id].status === 'help'; }).map(function (config) {
         var request = requests[config.id];
         var status = request ? request.status : 'pending';
         return el('details', { class: 'cl-access-request', open: status === 'help' }, [

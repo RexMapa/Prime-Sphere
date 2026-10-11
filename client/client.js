@@ -807,7 +807,7 @@
       accessRequests()
     ]);
     if (window.PSSupportChat) {
-      window.psClientSupport = window.PSSupportChat({ url: '/api/auth?scope=client&action=support-chat' });
+      window.psClientSupport = window.PSSupportChat({ url: '/api/auth?scope=client&action=support-chat', requests: Object.keys(o.accessRequests || {}).filter(function (id) { return o.accessRequests[id].status === 'help'; }) });
       document.body.appendChild(window.psClientSupport); window.psClientSupport.start();
     }
   }
@@ -877,7 +877,6 @@
         form.appendChild(el('div', { class: 'c-access-actions' }, [
           help, save,
           el('button', { type: 'button', class: 'c-btn-ghost', text: 'Cancel', onclick: function () { Object.keys(inputs).forEach(function (key) { inputs[key].value = record.values[key] || ''; }); message.textContent = ''; if (record.status === 'completed') { showSaved(); details.open = true; } else details.open = false; } }),
-          el('a', { class: 'c-btn-ghost', href: PORTAL, target: '_blank', rel: 'noopener', text: 'Open portal' })
         ]));
         form.appendChild(message);
         var body = el('div', { class: 'c-access-content' }, [

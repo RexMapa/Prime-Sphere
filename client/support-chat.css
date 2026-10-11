@@ -21,3 +21,14 @@
 .ps-support-file-hint { padding: 8px 12px 0; margin: 0; font-size: 11px; color: #91a4c2; }
 .ps-support-form .ps-support-attach { background: #ffffff12; color: #c7eeff; padding: 8px; }
 .ps-support-form button:disabled { opacity: .5; cursor: wait; }
+
+.ps-support-client .ps-support-body:not([hidden]) { height: min(520px,calc(100dvh - 150px)); display: flex; flex-direction: column; }
+.ps-support-tabs { display: flex; gap: 6px; padding: 10px; overflow-x: auto; flex-shrink: 0; border-bottom: 1px solid #ffffff18; }
+.ps-support-tabs button { border: 1px solid #ffffff20; background: #ffffff06; color: #a8b9d3; border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 11px; white-space: nowrap; cursor: pointer; }
+.ps-support-tabs button[aria-selected=true] { background: #1fbef820; border-color: #1fbef860; color: #c7eeff; }
+.ps-support-client .ps-support-log { flex: 1; min-height: 0; max-height: none; display: flex; flex-direction: column; align-items: flex-start; }
+.ps-support-message { max-width: 85%; align-self: flex-start; border-radius: 14px 14px 14px 4px; }
+.ps-support-message-own { align-self: flex-end; background: #1fbef820; border-radius: 14px 14px 4px 14px; }
+.ps-support-client .ps-support-form { flex-shrink: 0; border-top: 1px solid #ffffff18; }
+.ps-support-client .ps-support-file-hint { order: 2; }
+.ps-support-client .ps-support-error { flex-shrink: 0; }

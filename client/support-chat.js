@@ -4,6 +4,10 @@
     var panel = document.createElement('section'); panel.className = 'ps-support ' + (options.admin ? 'ps-support-admin' : 'ps-support-client');
     var header = document.createElement('button'); header.type = 'button'; header.className = 'ps-support-toggle'; header.textContent = options.admin ? 'Client support chat' : 'Chat with PrimeSphere';
     var body = document.createElement('div'); body.className = 'ps-support-body'; body.hidden = !options.admin;
+    var selectedTopic = options.topic || 'general';
+    var cachedMessages = [];
+    var tabs = document.createElement('div'); tabs.className = 'ps-support-tabs'; tabs.setAttribute('role','tablist'); tabs.setAttribute('aria-label','Request conversations');
+    body.append(tabs);
     var log = document.createElement('div'); log.className = 'ps-support-log'; log.setAttribute('role', 'log'); log.setAttribute('aria-live', 'polite');
     var form = document.createElement('form'); form.className = 'ps-support-form';
     var input = document.createElement('textarea'); input.rows = 2; input.maxLength = 2000; input.required = true; input.placeholder = 'Write a message…'; input.setAttribute('aria-label','Support message');
@@ -23,7 +27,7 @@
         for (var i = 0; i < files.length; i++) {
           var file = files[i]; error.textContent = 'Sending file ' + (i + 1) + ' of ' + files.length + '…';
           var type = file.type || types[file.name.split('.').pop().toLowerCase()] || 'application/octet-stream';
-          var response = await fetch(options.url + '&upload=1&filename=' + encodeURIComponent(file.name), { method:'POST', credentials:'same-origin', headers:{'X-Requested-With':'fetch','Content-Type':type}, body:file });
+          var response = await fetch(options.url + '&topic=' + encodeURIComponent(selectedTopic) + '&upload=1&filename=' + encodeURIComponent(file.name), { method:'POST', credentials:'same-origin', headers:{'X-Requested-With':'fetch','Content-Type':type}, body:file });
           var data = await response.json(); if (!response.ok) throw new Error(data.error || 'File upload failed.');
         }
         error.textContent = ''; clearTimeout(timer); poll();
@@ -34,23 +38,39 @@
     form.append(attach, input, button); body.append(log, form, error); panel.append(header, body);
     var lastSignature = '', timer, stopped = false;
     function request(method, data) {
-      return fetch(options.url, { method: method, credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch', 'Content-Type': 'application/json' }, body: data ? JSON.stringify(data) : undefined })
+      return fetch(options.url + (method === 'GET' ? '' : '&topic=' + encodeURIComponent(selectedTopic)), { method: method, credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch', 'Content-Type': 'application/json' }, body: data ? JSON.stringify(data) : undefined })
         .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error || 'Chat unavailable.'); return d; }); });
     }
     function poll() {
       if (stopped || !panel.isConnected) return;
       if (document.hidden) { timer = setTimeout(poll, 5000); return; }
       request('GET').then(function (data) {
+        cachedMessages = data.messages;
+        var topics = ['general'];
+        (options.requests || []).forEach(function (id) { if (topics.indexOf(id) < 0) topics.push(id); });
+        data.messages.forEach(function (m) { if (topics.indexOf(m.topic || 'general') < 0) topics.push(m.topic || 'general'); });
+        if (topics.indexOf(selectedTopic) < 0) topics.push(selectedTopic);
+        tabs.replaceChildren();
+        topics.forEach(function (id) {
+          var config = (window.PS_ACCESS_REQUESTS || []).find(function (c) { return c.id === id; });
+          var tab = document.createElement('button'); tab.type = 'button'; tab.setAttribute('role','tab');
+          tab.setAttribute('aria-selected', String(selectedTopic === id));
+          var unread = data.messages.filter(function (m) { return (m.topic || 'general') === id && m.sender === (options.admin ? 'client' : 'admin') && !m.seen; }).length;
+          tab.textContent = (config ? config.title : 'General') + (unread ? ' (' + unread + ')' : '');
+          tab.addEventListener('click', function () { selectedTopic = id; lastSignature = ''; clearTimeout(timer); poll(); });
+          tabs.append(tab);
+        });
+        var visible = data.messages.filter(function (m) { return (m.topic || 'general') === selectedTopic; });
         var incoming = data.messages.filter(function (m) { return m.sender === (options.admin ? 'client' : 'admin') && !m.seen; });
         if (incoming.length && !options.admin) body.hidden = false;
         header.textContent = (options.admin ? 'Client support chat' : 'Chat with PrimeSphere') + (incoming.length ? ' (' + incoming.length + ' new)' : '');
         header.setAttribute('aria-expanded', String(!body.hidden));
-        var signature = JSON.stringify(data.messages);
+        var signature = selectedTopic + JSON.stringify(visible);
         if (signature !== lastSignature) {
           lastSignature = signature; log.replaceChildren();
-          if (!data.messages.length) { var empty = document.createElement('p'); empty.textContent = options.admin ? 'Send a message to help this client with their access request.' : 'Your account manager can help with your access requests here.'; log.append(empty); }
-          data.messages.forEach(function (m) {
-            var row = document.createElement('div'); row.className = 'ps-support-message ps-support-message-' + m.sender;
+          if (!visible.length) { var empty = document.createElement('p'); empty.textContent = options.admin ? 'Send a message to help this client with their access request.' : 'Your account manager can help with your access requests here.'; log.append(empty); }
+          visible.forEach(function (m) {
+            var row = document.createElement('div'); row.className = 'ps-support-message ps-support-message-' + m.sender + (m.sender === (options.admin ? 'admin' : 'client') ? ' ps-support-message-own' : '');
             var name = document.createElement('strong'); name.textContent = m.sender === 'system' ? 'Access help' : m.name || (m.sender === 'admin' ? 'PrimeSphere' : 'Client');
             var text = document.createElement('p'); text.textContent = m.body;
             var time = document.createElement('small'); time.textContent = new Date(m.createdAt).toLocaleString();
@@ -67,7 +87,7 @@
             row.append(time); log.append(row);
           }); log.scrollTop = log.scrollHeight;
         }
-        if (!body.hidden && incoming.length) return request('POST', { action: 'read', through: data.messages[data.messages.length - 1].id });
+        if (!body.hidden && visible.some(function (m) { return m.sender === (options.admin ? 'client' : 'admin') && !m.seen; })) return request('POST', { action: 'read', through: visible[visible.length - 1].id });
       }).catch(function (err) { error.textContent = err.message; }).finally(function () { if (!stopped) timer = setTimeout(poll, 5000); });
     }
     header.addEventListener('click', function () { body.hidden = !body.hidden; header.setAttribute('aria-expanded', String(!body.hidden)); });
