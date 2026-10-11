@@ -100,7 +100,7 @@
       request('GET').then(function (data) {
         cachedMessages = data.messages;
         var topics = options.admin ? ['general'] : [];
-        (options.admin ? options.requests || [] : []).forEach(function (id) { if (topics.indexOf(id) < 0) topics.push(id); });
+        (data.requests || options.requests || []).forEach(function (id) { if (topics.indexOf(id) < 0) topics.push(id); });
         data.messages.forEach(function (m) { if (topics.indexOf(m.topic || 'general') < 0) topics.push(m.topic || 'general'); });
         if (options.admin && topics.indexOf(selectedTopic) < 0) topics.push(selectedTopic);
         if (options.singleTopic) topics = [selectedTopic];
@@ -115,7 +115,7 @@
           tab.textContent = options.admin ? title + (unread ? ' (' + unread + ')' : '') : ''; 
           if (!options.admin) {
             var preview = data.messages.filter(function(m){return (m.topic || 'general')===id;}).slice(-1)[0];
-            var subtitle = document.createElement('small'); subtitle.textContent = preview ? (preview.body || (preview.attachment ? preview.attachment.name : 'Attachment')) : 'Start a conversation';
+            var subtitle = document.createElement('small'); subtitle.textContent = preview ? (preview.body || (preview.attachment ? preview.attachment.name : 'Attachment')) : 'Help requested · Waiting for your account manager';
             var avatar=document.createElement('span');avatar.className='ps-support-list-avatar';avatar.textContent=title.trim().split(/\s+/).map(function(part){return part[0];}).slice(0,2).join('').toUpperCase();
             var copy=document.createElement('span');copy.className='ps-support-list-copy';
             var nameLabel=document.createElement('strong');nameLabel.textContent=title;copy.append(nameLabel,subtitle);tab.append(avatar,copy);
