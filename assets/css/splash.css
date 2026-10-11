@@ -1,5 +1,5 @@
 /* ==========================================================================
-   PrimeSphere intro splash (splash.js). Plays once per browser tab session.
+   PrimeSphere intro splash (/assets/js/splash.js). Plays once per browser tab session.
    Timeline: 0s backdrop + stars → .2s rings draw → .35s emblem + flare
    → 1.25s wordmark → 2s tagline → 2.3s a glint runs across the wordmark
    → .6–3.2s progress → 3s content lifts away → 3.25s the curtain opens.

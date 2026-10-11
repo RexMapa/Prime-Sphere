@@ -161,3 +161,34 @@ vercel link        # connect to your Vercel project
 vercel env pull .env.local
 vercel dev
 ```
+
+## Client access requests and support chat
+
+The client dashboard includes brand guidelines, access request forms, completion progress,
+and support chat. Help requests and unread client replies appear in Admin > Clients > Needs action.
+Select a client to reply in Client support chat. Unread admin replies automatically open
+the client chat while the client is viewing their dashboard.
+
+Both parties can attach images, video, audio, PDFs, text files, and Office documents.
+Uploads require the connected Vercel Blob store and are limited to 4 MB per file.
+The application creates the client message table and attachment column automatically.
+
+Deploy the contents of this repository at the project root. Keep package-lock.json.
+Do not commit environment secrets, dependencies, generated archives, or deployment folders.
+
+
+## Repository layout
+
+- Root HTML pages preserve the existing public page URLs.
+- assets/css/: shared public stylesheets.
+- assets/js/: public website scripts and guest chat.
+- assets/: images, logos and project/store artwork.
+- client/: client dashboard, onboarding and support chat.
+- admin/: admin dashboard and client management.
+- api/: Vercel API handlers.
+- lib/: shared server logic and database migrations.
+- services/: service pages.
+- database/schema.sql: reference database schema.
+- package.json, package-lock.json and vercel.json stay at the deployment root.
+
+Deploy this complete directory at the repository root.

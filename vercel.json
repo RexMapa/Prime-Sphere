@@ -66,5 +66,57 @@
         }
       ]
     }
+  ],
+  "redirects": [
+    {
+      "source": "/styles.css",
+      "destination": "/assets/css/styles.css",
+      "permanent": true
+    },
+    {
+      "source": "/premium.css",
+      "destination": "/assets/css/premium.css",
+      "permanent": true
+    },
+    {
+      "source": "/splash.css",
+      "destination": "/assets/css/splash.css",
+      "permanent": true
+    },
+    {
+      "source": "/script.js",
+      "destination": "/assets/js/script.js",
+      "permanent": true
+    },
+    {
+      "source": "/chat.js",
+      "destination": "/assets/js/chat.js",
+      "permanent": true
+    },
+    {
+      "source": "/booking.js",
+      "destination": "/assets/js/booking.js",
+      "permanent": true
+    },
+    {
+      "source": "/blog.js",
+      "destination": "/assets/js/blog.js",
+      "permanent": true
+    },
+    {
+      "source": "/premium.js",
+      "destination": "/assets/js/premium.js",
+      "permanent": true
+    },
+    {
+      "source": "/promo.js",
+      "destination": "/assets/js/promo.js",
+      "permanent": true
+    },
+    {
+      "source": "/splash.js",
+      "destination": "/assets/js/splash.js",
+      "permanent": true
+    }
   ]
 }

@@ -1,6 +1,6 @@
 /* PrimeSphere intro splash. Load it in <head> right after splash.css (not deferred), so the
    overlay is on screen before the page paints. It plays once per tab session; later page
-   loads skip it. The animation and its exit are pure CSS (splash.css), so it always clears. */
+   loads skip it. The animation and its exit are pure CSS (/assets/css/splash.css), so it always clears. */
 (function () {
   'use strict';
   var KEY = 'ps-splash-seen';
