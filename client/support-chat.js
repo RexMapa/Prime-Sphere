@@ -9,7 +9,29 @@
     var input = document.createElement('textarea'); input.rows = 2; input.maxLength = 2000; input.required = true; input.placeholder = 'Write a message…'; input.setAttribute('aria-label','Support message');
     var button = document.createElement('button'); button.type = 'submit'; button.textContent = 'Send';
     var error = document.createElement('p'); error.className = 'ps-support-error'; error.setAttribute('role','status');
-    form.append(input, button); body.append(log, form, error); panel.append(header, body);
+    var picker = document.createElement('input'); picker.type = 'file'; picker.hidden = true; picker.multiple = true;
+    picker.accept = '.jpg,.jpeg,.png,.webp,.gif,.mp4,.webm,.mov,.mp3,.m4a,.wav,.ogg,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx';
+    var attach = document.createElement('button'); attach.type = 'button'; attach.className = 'ps-support-attach'; attach.textContent = 'Attach'; attach.setAttribute('aria-label','Attach images, videos, audio or documents');
+    var hint = document.createElement('p'); hint.className = 'ps-support-file-hint'; hint.textContent = 'Images, video, audio and documents · Up to 4 MB per file';
+    attach.addEventListener('click', function () { picker.click(); });
+    picker.addEventListener('change', async function () {
+      var files = Array.from(picker.files || []); if (!files.length) return;
+      if (files.length > 10 || files.some(function (file) { return !file.size || file.size > 4 * 1024 * 1024; })) { error.textContent = 'Choose up to 10 files, each non-empty and no larger than 4 MB.'; picker.value = ''; return; }
+      attach.disabled = true; button.disabled = true; input.disabled = true;
+      var types = { jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',gif:'image/gif',mp4:'video/mp4',webm:'video/webm',mov:'video/quicktime',mp3:'audio/mpeg',m4a:'audio/mp4',wav:'audio/wav',ogg:'audio/ogg',pdf:'application/pdf',txt:'text/plain',csv:'text/csv',doc:'application/msword',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',xls:'application/vnd.ms-excel',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',ppt:'application/vnd.ms-powerpoint',pptx:'application/vnd.openxmlformats-officedocument.presentationml.presentation' };
+      try {
+        for (var i = 0; i < files.length; i++) {
+          var file = files[i]; error.textContent = 'Sending file ' + (i + 1) + ' of ' + files.length + '…';
+          var type = file.type || types[file.name.split('.').pop().toLowerCase()] || 'application/octet-stream';
+          var response = await fetch(options.url + '&upload=1&filename=' + encodeURIComponent(file.name), { method:'POST', credentials:'same-origin', headers:{'X-Requested-With':'fetch','Content-Type':type}, body:file });
+          var data = await response.json(); if (!response.ok) throw new Error(data.error || 'File upload failed.');
+        }
+        error.textContent = ''; clearTimeout(timer); poll();
+      } catch (err) { error.textContent = err.message; }
+      finally { attach.disabled = false; button.disabled = false; input.disabled = false; picker.value = ''; }
+    });
+    body.append(hint, picker);
+    form.append(attach, input, button); body.append(log, form, error); panel.append(header, body);
     var lastSignature = '', timer, stopped = false;
     function request(method, data) {
       return fetch(options.url, { method: method, credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch', 'Content-Type': 'application/json' }, body: data ? JSON.stringify(data) : undefined })
@@ -32,7 +54,17 @@
             var name = document.createElement('strong'); name.textContent = m.sender === 'system' ? 'Access help' : m.name || (m.sender === 'admin' ? 'PrimeSphere' : 'Client');
             var text = document.createElement('p'); text.textContent = m.body;
             var time = document.createElement('small'); time.textContent = new Date(m.createdAt).toLocaleString();
-            row.append(name,text,time); log.append(row);
+            row.append(name,text);
+            if (m.attachment && /^https:\/\//.test(m.attachment.url)) {
+              var file = m.attachment;
+              var media;
+              if (file.type.indexOf('image/') === 0) { media = document.createElement('img'); media.alt = file.name; media.loading = 'lazy'; }
+              else if (file.type.indexOf('video/') === 0) { media = document.createElement('video'); media.controls = true; media.preload = 'metadata'; }
+              else if (file.type.indexOf('audio/') === 0) { media = document.createElement('audio'); media.controls = true; media.preload = 'metadata'; }
+              if (media) { media.src = file.url; media.className = 'ps-support-media'; row.append(media); }
+              var link = document.createElement('a'); link.href = file.url; link.target = '_blank'; link.rel = 'noopener'; link.textContent = file.name + ' · ' + Math.ceil(file.size / 1024) + ' KB'; link.className = 'ps-support-file-link'; row.append(link);
+            }
+            row.append(time); log.append(row);
           }); log.scrollTop = log.scrollHeight;
         }
         if (!body.hidden && incoming.length) return request('POST', { action: 'read', through: data.messages[data.messages.length - 1].id });
