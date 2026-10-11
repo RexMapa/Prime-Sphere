@@ -761,3 +761,21 @@ select.c-input option { background: #0D1A33; color: #EAF2FF; }
 .c-access-body { display: grid; gap: 18px; }
 .c-access-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 @media (max-width:600px) { .c-access { padding: 18px; } .c-access-head { flex-direction: column; } .c-access-content { padding: 0 16px 18px; } .c-access-item summary { flex-wrap: wrap; padding: 14px; } .c-access-item summary strong { flex: 1; } }
+
+.c-access-progress { display: grid; gap: 10px; margin: 0 0 22px; padding: 16px 18px; border-radius: 12px; border: 1px solid rgba(127,216,255,.14); background: rgba(127,216,255,.04); }
+.c-access-progress-label { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 13px; color: #d6e7f7; }
+.c-access-percent { color: #7fd8ff; font-variant-numeric: tabular-nums; }
+.c-access-progress-bar { appearance: none; border: 0; border-radius: 20px; overflow: hidden; width: 100%; height: 7px; background: rgba(255,255,255,.1); }
+.c-access-progress-bar::-webkit-progress-bar { background: rgba(255,255,255,.1); border-radius: 20px; }
+.c-access-progress-bar::-webkit-progress-value { background: linear-gradient(90deg,#0589ed,#7fd8ff); border-radius: 20px; transition: width .25s ease; }
+.c-access-progress-bar::-moz-progress-bar { background: #1fbef8; border-radius: 20px; }
+.c-access-saved { padding: 0 20px 18px 60px; }
+.c-access-saved-values { display: grid; gap: 8px; margin: 0 0 14px; font-size: 13px; line-height: 1.6; }
+.c-access-saved-values div { display: flex; flex-wrap: wrap; gap: 4px 8px; }
+.c-access-saved-values dt { color: #91a4c2; }
+.c-access-saved-values dd { margin: 0; color: #d6e7f7; white-space: pre-wrap; overflow-wrap: anywhere; }
+.c-access-edit { padding: 0; border: 0; background: none; font: inherit; font-size: 13px; color: #7fd8ff; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.c-access-edit:focus-visible { outline: 2px solid #7fd8ff; outline-offset: 4px; }
+.c-access-content[hidden], .c-access-saved[hidden] { display: none; }
+.c-access-item[data-status=completed][data-editing=false] summary strong { color: #91a4c2; text-decoration: line-through; }
+@media (max-width:600px) { .c-access-saved { padding: 0 16px 18px; } .c-access-saved-values div { display: grid; gap: 2px; } }

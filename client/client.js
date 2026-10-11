@@ -812,10 +812,21 @@
     var configs = window.PS_ACCESS_REQUESTS || [];
     var saved = state.me.onboarding.accessRequests || {};
     var counter = el('span', { class: 'c-tag' });
-    function updateCounter() { counter.textContent = configs.filter(function (c) { return saved[c.id] && saved[c.id].status === 'completed'; }).length + ' of ' + configs.length + ' completed'; }
+    var progressLabel = el('span', { class: 'c-access-percent' });
+    var progressBar = el('progress', { class: 'c-access-progress-bar', max: configs.length || 1, value: 0, 'aria-label': 'Access request completion' });
+    function updateCounter() {
+      var completed = configs.filter(function (c) { return saved[c.id] && saved[c.id].status === 'completed'; }).length;
+      counter.textContent = completed + ' of ' + configs.length + ' completed';
+      progressLabel.textContent = (configs.length ? Math.round(completed / configs.length * 100) : 0) + '%';
+      progressBar.value = completed;
+    }
     updateCounter();
     return el('section', { class: 'c-card c-access' }, [
       el('header', { class: 'c-access-head' }, [el('div', {}, [el('h2', { text: 'Access Request' }), el('p', { class: 'c-help', text: 'Connect the accounts we need to get started. Your account manager will share the team details to invite. Never share passwords here.' })]), counter]),
+      el('div', { class: 'c-access-progress' }, [
+        el('div', { class: 'c-access-progress-label' }, [el('strong', { text: 'Overall Progress' }), progressLabel]),
+        progressBar
+      ]),
       el('div', { class: 'c-access-list' }, configs.map(function (config, index) {
         var record = saved[config.id] || { values: {}, status: 'pending' };
         var details = el('details', { class: 'c-access-item' });
@@ -853,14 +864,14 @@
               number.textContent = status === 'completed' ? '✓' : index + 1;
               details.dataset.status = status; updateCounter();
               message.textContent = status === 'completed' ? 'Saved. Your account manager can review these details.' : 'Help request saved. Contact your account manager in the portal for guidance.';
-              if (status === 'completed') details.open = false;
+              if (status === 'completed') { showSaved(); details.open = true; }
             }).catch(function (err) { message.textContent = err.message; })
             .finally(function () { save.disabled = false; help.disabled = false; });
         }
         form.addEventListener('submit', function (e) { e.preventDefault(); if (form.reportValidity()) persist('completed'); });
         form.appendChild(el('div', { class: 'c-access-actions' }, [
           help, save,
-          el('button', { type: 'button', class: 'c-btn-ghost', text: 'Cancel', onclick: function () { Object.keys(inputs).forEach(function (key) { inputs[key].value = record.values[key] || ''; }); message.textContent = ''; details.open = false; } }),
+          el('button', { type: 'button', class: 'c-btn-ghost', text: 'Cancel', onclick: function () { Object.keys(inputs).forEach(function (key) { inputs[key].value = record.values[key] || ''; }); message.textContent = ''; if (record.status === 'completed') { showSaved(); details.open = true; } else details.open = false; } }),
           el('a', { class: 'c-btn-ghost', href: PORTAL, target: '_blank', rel: 'noopener', text: 'Open portal' })
         ]));
         form.appendChild(message);
@@ -870,8 +881,23 @@
           el('div', { class: 'c-access-note' }, [el('strong', { text: 'How to do it' }), el('p', { text: config.guide })]),
           form
         ]);
+        var savedView = el('div', { class: 'c-access-saved' });
+        function showSaved() {
+          savedView.replaceChildren(
+            el('dl', { class: 'c-access-saved-values' }, config.fields.filter(function (f) { return record.values[f.key]; }).map(function (f) {
+              return el('div', {}, [el('dt', { text: f.label + ':' }), el('dd', { text: record.values[f.key] })]);
+            })),
+            el('button', { type: 'button', class: 'c-access-edit', text: 'Edit', 'aria-label': 'Edit ' + config.title, onclick: function () {
+              body.hidden = false; savedView.hidden = true; details.dataset.editing = 'true'; details.open = true;
+              var first = inputs[config.fields[0].key]; if (first) first.focus({ preventScroll: true });
+            } })
+          );
+          body.hidden = true; savedView.hidden = false; details.dataset.editing = 'false';
+        }
         details.dataset.status = record.status;
-        details.appendChild(summary); details.appendChild(body);
+        savedView.hidden = true;
+        details.appendChild(summary); details.appendChild(savedView); details.appendChild(body);
+        if (record.status === 'completed') { showSaved(); details.open = true; }
         return details;
       }))
     ]);
