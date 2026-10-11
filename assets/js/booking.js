@@ -348,7 +348,7 @@
   setInterval(liveCheck, 30000);
   document.addEventListener('visibilitychange', liveCheck);
 
-  if (!tabs.length && $('#booking-form')) loadAvailability();
+  if ($('#booking-form') && (!tabs.length || ($('#tab-booking') && $('#tab-booking').getAttribute('aria-selected') === 'true'))) loadAvailability();
 
   $('#done-again').addEventListener('click', function () {
     $('#booking-done').hidden = true;

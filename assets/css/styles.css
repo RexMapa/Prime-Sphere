@@ -1354,3 +1354,8 @@ button.round-link { cursor: pointer; font: inherit; padding: 0; }
 .home-booking { min-width:0; }
 @media(max-width:600px){.home-booking .contact-panel{padding:18px;}}
 [data-work-page] #stores { scroll-margin-top: 105px; }
+
+.home-contact-layout { display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.3fr);gap:48px;align-items:start; }
+.home-contact-layout .contact-info { min-width:0; }
+.home-contact-layout .home-booking { width:100%;min-width:0; }
+@media(max-width:900px){.home-contact-layout{grid-template-columns:minmax(0,1fr);gap:32px;}}
