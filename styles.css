@@ -1337,3 +1337,13 @@ button.round-link { cursor: pointer; font: inherit; padding: 0; }
 .chat-code-status { color:#91a4c2; font-size:11px; }
 @keyframes ps-guest-arrive { from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)} }
 @media(prefers-reduced-motion:reduce){ .chat-entry,.chat-entry-option{animation:none;transition:none;} }
+/* Dark chat email prompt: readable text, muted borders and matching controls. */
+.chat-root .chat-card { border-color:rgba(127,216,255,.2); border-radius:14px; }
+.chat-root .chat-card-title { color:#d6e7f7; font-size:13px; line-height:1.7; }
+.chat-root .chat-card-label, .chat-root .chat-link--muted { color:#a8b9d3; }
+.chat-root .chat-card-msg { color:#ffb8b0; }
+.chat-root .chat-email input { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.18); color:#e7eef8; min-width:0; }
+.chat-root .chat-email input::placeholder { color:#91a4c2; }
+.chat-root .chat-email input:focus { border-color:#7fd8ff; box-shadow:0 0 0 3px rgba(127,216,255,.08); }
+.chat-root .chat-email button { background:linear-gradient(135deg,#27c2f6,#078dee); color:#041b2b; }
+.chat-root .chat-link--muted:hover { color:#7fd8ff; }
