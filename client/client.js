@@ -331,10 +331,20 @@
       var list = el('div', { class: 'c-brand-list' });
       function draw() {
         list.replaceChildren();
-        if (!items.length) list.appendChild(el('span', { class: 'c-help', text: 'No entries added yet.' }));
+        if (!items.length && f.type !== 'upload') list.appendChild(el('span', { class: 'c-help', text: 'No entries added yet.' }));
         items.forEach(function (item, i) {
-          list.appendChild(el('div', { class: 'c-brand-item' }, [
-            el('span', { text: item }),
+          var colourMatch = f.key === 'brandColours' && /^(.*) — (#[0-9a-f]{6})$/i.exec(item);
+          var content = colourMatch
+            ? el('div', { class: 'c-colour-details' }, [
+                el('span', { class: 'c-colour-swatch', style: 'background-color:' + colourMatch[2], 'aria-hidden': 'true' }),
+                el('div', { class: 'c-colour-copy' }, [
+                  el('strong', { text: colourMatch[1] }),
+                  el('span', { class: 'c-colour-hex', text: colourMatch[2].toUpperCase() })
+                ])
+              ])
+            : el('span', { text: item });
+          list.appendChild(el('div', { class: 'c-brand-item' + (colourMatch ? ' c-colour-item' : '') }, [
+            content,
             el('button', { type: 'button', class: 'c-btn-ghost', text: 'Remove', 'aria-label': 'Remove entry ' + (i + 1), onclick: function () { items.splice(i, 1); set(items.slice()); draw(); } })
           ]));
         });
@@ -357,17 +367,28 @@
           } })
         ])));
       } else {
-        var picker = el('input', { type: 'file', class: 'c-input', accept: '.jpg,.jpeg,.png,.webp,.pdf,.doc,.docx', 'aria-label': 'Upload brand asset', onchange: function () {
+        var picker = el('input', { type: 'file', hidden: true, accept: '.jpg,.jpeg,.png,.webp,.pdf,.doc,.docx', 'aria-label': 'Upload brand asset', onchange: function () {
           var file = picker.files[0]; if (!file) return;
           if (items.length >= 30 || file.size > 4 * 1024 * 1024) { toast('Maximum 30 files, up to 4 MB each.', true); picker.value = ''; return; }
-          picker.disabled = true;
+          picker.disabled = true; uploadButton.disabled = true; uploadButton.textContent = 'Uploading…';
           fetch('/api/auth?scope=client&action=brand-upload', { method: 'POST', credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch', 'Content-Type': file.type || 'application/octet-stream' }, body: file })
             .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error || 'Upload failed.'); return d; }); })
             .then(function (d) { items.push(file.name + ' — ' + d.url); set(items.slice()); draw(); toast('File uploaded.'); })
             .catch(function (err) { toast(err.message, true); })
-            .finally(function () { picker.disabled = false; picker.value = ''; });
+            .finally(function () { picker.disabled = false; picker.value = ''; uploadButton.disabled = false; uploadButton.replaceChildren(el('span', { html: ICON.upload }), 'Upload file'); });
         } });
-        control.appendChild(picker);
+        var uploadButton = el('button', { type: 'button', class: 'c-btn-ghost c-asset-upload-btn', onclick: function () { picker.click(); } }, [el('span', { html: ICON.upload }), 'Upload file']);
+        control.classList.add('c-asset-panel');
+        control.replaceChildren(
+          el('div', { class: 'c-asset-upload-row' }, [
+            el('div', { class: 'c-asset-upload-copy' }, [
+              el('strong', { text: 'Bring your brand to life' }),
+              el('span', { class: 'c-help', text: 'Add logos, photos, brand guides or documents.' })
+            ]),
+            uploadButton
+          ]),
+          list, picker
+        );
       }
     } else if (f.type === 'textarea') {
       control = el('textarea', { id: id, class: 'c-input', rows: '4', maxlength: '4000', placeholder: f.placeholder || null, oninput: function (e) { set(e.target.value); } });
@@ -781,7 +802,78 @@
             ['What success looks like', o.goals]
           ])
         ])
-      ])
+      ]),
+      accessRequests()
+    ]);
+  }
+
+
+  function accessRequests() {
+    var configs = window.PS_ACCESS_REQUESTS || [];
+    var saved = state.me.onboarding.accessRequests || {};
+    var counter = el('span', { class: 'c-tag' });
+    function updateCounter() { counter.textContent = configs.filter(function (c) { return saved[c.id] && saved[c.id].status === 'completed'; }).length + ' of ' + configs.length + ' completed'; }
+    updateCounter();
+    return el('section', { class: 'c-card c-access' }, [
+      el('header', { class: 'c-access-head' }, [el('div', {}, [el('h2', { text: 'Access Request' }), el('p', { class: 'c-help', text: 'Connect the accounts we need to get started. Your account manager will share the team details to invite. Never share passwords here.' })]), counter]),
+      el('div', { class: 'c-access-list' }, configs.map(function (config, index) {
+        var record = saved[config.id] || { values: {}, status: 'pending' };
+        var details = el('details', { class: 'c-access-item' });
+        var badge = el('span', { class: 'c-tag', text: record.status === 'completed' ? 'Completed' : record.status === 'help' ? 'Help requested' : 'To do' });
+        var number = el('span', { class: 'c-access-number', text: record.status === 'completed' ? '✓' : index + 1 });
+        var summary = el('summary', {}, [number, el('strong', { text: config.title }), badge]);
+        var form = el('form', { class: 'c-access-body' });
+        var inputs = {};
+        var message = el('p', { class: 'c-help', role: 'status' });
+        config.fields.forEach(function (f) {
+          var id = 'access-' + config.id + '-' + f.key;
+          var input = el(f.type === 'select' ? 'select' : f.type === 'textarea' ? 'textarea' : 'input', { id: id, class: 'c-input', type: f.type === 'text' ? 'text' : null, rows: f.type === 'textarea' ? 3 : null, maxlength: 4000, required: f.required });
+          if (f.type === 'select') {
+            input.appendChild(el('option', { value: '', text: 'Choose one' }));
+            f.options.forEach(function (option) { input.appendChild(el('option', { value: option, text: option })); });
+          }
+          input.value = record.values[f.key] || '';
+          if (config.id === 'googleAds' && f.key === 'account') { input.pattern = '[0-9]{3}-?[0-9]{3}-?[0-9]{4}'; input.placeholder = 'XXX-XXX-XXXX'; }
+          if (config.id === 'shopify' && f.key === 'code') { input.pattern = '[0-9]{4}'; input.placeholder = '4-digit code'; }
+          inputs[f.key] = input;
+          form.appendChild(el('div', { class: 'c-field' }, [el('label', { class: 'c-label', for: id, text: f.label + (f.required ? ' *' : '') }), input]));
+        });
+        var save = el('button', { type: 'submit', class: 'c-btn', text: 'Save & Complete' });
+        var help = el('button', { type: 'button', class: 'c-btn-ghost', text: 'I need help with this', onclick: function () { persist('help'); } });
+        function persist(status) {
+          var values = {};
+          Object.keys(inputs).forEach(function (key) { values[key] = inputs[key].value.trim(); });
+          save.disabled = true; help.disabled = true; message.textContent = 'Saving…';
+          api('access-save', { json: { id: config.id, status: status, values: values } })
+            .then(function (data) {
+              saved[config.id] = data.request;
+              state.me.onboarding.accessRequests = saved;
+              record = data.request;
+              badge.textContent = status === 'completed' ? 'Completed' : 'Help requested';
+              number.textContent = status === 'completed' ? '✓' : index + 1;
+              details.dataset.status = status; updateCounter();
+              message.textContent = status === 'completed' ? 'Saved. Your account manager can review these details.' : 'Help request saved. Contact your account manager in the portal for guidance.';
+              if (status === 'completed') details.open = false;
+            }).catch(function (err) { message.textContent = err.message; })
+            .finally(function () { save.disabled = false; help.disabled = false; });
+        }
+        form.addEventListener('submit', function (e) { e.preventDefault(); if (form.reportValidity()) persist('completed'); });
+        form.appendChild(el('div', { class: 'c-access-actions' }, [
+          help, save,
+          el('button', { type: 'button', class: 'c-btn-ghost', text: 'Cancel', onclick: function () { Object.keys(inputs).forEach(function (key) { inputs[key].value = record.values[key] || ''; }); message.textContent = ''; details.open = false; } }),
+          el('a', { class: 'c-btn-ghost', href: PORTAL, target: '_blank', rel: 'noopener', text: 'Open portal' })
+        ]));
+        form.appendChild(message);
+        var body = el('div', { class: 'c-access-content' }, [
+          el('p', { class: 'c-help', text: config.lead }),
+          el('div', { class: 'c-access-note' }, [el('strong', { text: 'What we will do with this' }), el('ul', {}, config.work.map(function (line) { return el('li', { text: line }); }))]),
+          el('div', { class: 'c-access-note' }, [el('strong', { text: 'How to do it' }), el('p', { text: config.guide })]),
+          form
+        ]);
+        details.dataset.status = record.status;
+        details.appendChild(summary); details.appendChild(body);
+        return details;
+      }))
     ]);
   }
 

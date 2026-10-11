@@ -717,3 +717,47 @@ select.c-input option { background: #0D1A33; color: #EAF2FF; }
 .c-field--danger .c-label, .c-field--danger .c-help { color: #ff9b90; }
 .c-field--danger .c-brand-item { border-color: rgba(255,122,110,.55); background: rgba(255,122,110,.06); }
 @media (max-width: 600px) { .c-brand-add, .c-brand-item { flex-direction: column; } .c-brand-add .c-input { width: 100%; } }
+
+.c-asset-panel { padding: 22px; border: 1px solid rgba(127,216,255,.2); border-radius: 16px; background: linear-gradient(125deg,rgba(127,216,255,.06),rgba(255,255,255,.02)); }
+.c-asset-upload-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.c-asset-upload-copy { display: grid; gap: 6px; }
+.c-asset-upload-copy strong { color: #e7eef8; font-size: 14px; }
+.c-asset-upload-btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; white-space: nowrap; border-color: rgba(127,216,255,.35); background: rgba(127,216,255,.1); color: #c7eeff; }
+.c-asset-upload-btn svg { width: 18px; height: 18px; }
+.c-asset-upload-btn:hover { background: rgba(127,216,255,.18); }
+.c-asset-upload-btn:focus-visible { outline: 2px solid #7fd8ff; outline-offset: 4px; }
+.c-asset-upload-btn:disabled { opacity: .6; cursor: wait; }
+.c-asset-panel .c-brand-list:empty { display: none; }
+@media (max-width: 600px) { .c-asset-upload-row { align-items: flex-start; flex-direction: column; } .c-asset-upload-btn { width: 100%; } }
+
+.c-brand-item.c-colour-item { align-items: center; padding: 12px 14px; }
+.c-colour-details { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.c-colour-swatch { width: 40px; height: 40px; flex: 0 0 40px; border-radius: 10px; border: 1px solid rgba(255,255,255,.22); box-shadow: inset 0 0 0 3px rgba(255,255,255,.04); }
+.c-colour-copy { display: grid; gap: 3px; min-width: 0; }
+.c-colour-copy strong { font-size: 14px; color: #e7eef8; overflow-wrap: anywhere; }
+.c-colour-hex { color: #91a4c2; font-size: 12px; font-family: ui-monospace, monospace; letter-spacing: .04em; }
+.c-colour-item .c-btn-ghost { padding: 7px 12px; font-size: 12px; min-height: 34px; }
+@media (max-width: 600px) { .c-brand-item.c-colour-item { flex-direction: row; } }
+
+.c-access { margin-top: 22px; padding: 26px; }
+.c-access-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
+.c-access h2 { margin: 0 0 8px; font-size: 22px; }
+.c-access-head .c-tag { white-space: nowrap; }
+.c-access-list { display: grid; gap: 12px; }
+.c-access-item { border: 1px solid rgba(255,255,255,.14); border-radius: 14px; background: rgba(255,255,255,.025); overflow: hidden; }
+.c-access-item summary { display: flex; align-items: center; gap: 12px; padding: 18px; cursor: pointer; list-style: none; }
+.c-access-item summary::-webkit-details-marker { display: none; }
+.c-access-item summary::after { content: '⌄'; margin-left: auto; color: #7fd8ff; }
+.c-access-item[open] summary::after { transform: rotate(180deg); }
+.c-access-item summary:focus-visible { outline: 2px solid #7fd8ff; outline-offset: -3px; }
+.c-access-number { display: grid; place-items: center; width: 30px; height: 30px; flex: 0 0 30px; border-radius: 50%; color: #7fd8ff; background: rgba(31,190,248,.1); border: 1px solid rgba(31,190,248,.3); }
+.c-access-item[data-status=completed] .c-access-number { color: #4ed19a; border-color: rgba(78,209,154,.4); }
+.c-access-item[data-status=help] summary .c-tag { color: #ffd490; }
+.c-access-content { padding: 0 20px 20px 60px; display: grid; gap: 16px; }
+.c-access-note { border-radius: 10px; padding: 16px; background: rgba(127,216,255,.045); border: 1px solid rgba(127,216,255,.1); font-size: 13px; line-height: 1.7; color: #a8b9d3; }
+.c-access-note strong { color: #d6e7f7; }
+.c-access-note ul { margin: 8px 0 0; padding-left: 18px; }
+.c-access-note p { margin: 8px 0 0; }
+.c-access-body { display: grid; gap: 18px; }
+.c-access-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+@media (max-width:600px) { .c-access { padding: 18px; } .c-access-head { flex-direction: column; } .c-access-content { padding: 0 16px 18px; } .c-access-item summary { flex-wrap: wrap; padding: 14px; } .c-access-item summary strong { flex: 1; } }

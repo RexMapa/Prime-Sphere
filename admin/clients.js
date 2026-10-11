@@ -355,7 +355,20 @@
     if (!Object.keys(o).length) return el('p', { class: 'muted cl-no-answers', text: 'No onboarding answers yet.' });
     return el('div', { class: 'cl-answers' }, [
       el('h3', { text: c.status === 'onboarding' || c.status === 'invited' ? 'Onboarding answers so far' : 'Onboarding answers' })
-    ].concat(FIELDS.map(function (s) {
+    ].concat(Object.keys(o.accessRequests || {}).length ? [el('section', {}, [
+      el('h4', { text: 'Access Request' }),
+      el('div', {}, Object.keys(o.accessRequests).map(function (id) {
+        var request = o.accessRequests[id];
+        var config = (window.PS_ACCESS_REQUESTS || []).find(function (c) { return c.id === id; });
+        return el('section', {}, [
+          el('h4', { text: (config ? config.title : id) + ' — ' + request.status }),
+          el('dl', { class: 'detail-grid' }, Object.keys(request.values || {}).map(function (key) {
+            var field = config && config.fields.find(function (f) { return f.key === key; });
+            return el('div', { class: 'detail-cell' }, [el('dt', { text: field ? field.label : key }), el('dd', { text: request.values[key] || 'Not provided' })]);
+          }))
+        ]);
+      }))
+    ])] : []).concat(FIELDS.map(function (s) {
       return el('section', {}, [
         el('h4', { text: s.title }),
         el('dl', { class: 'detail-grid', style: 'margin:0' }, s.fields.filter(function (f) { return f.type !== 'agree'; }).map(function (f) {
