@@ -4,6 +4,21 @@
     var panel = document.createElement('section'); panel.className = 'ps-support ' + (options.admin ? 'ps-support-admin' : 'ps-support-client');
     var header = document.createElement('button'); header.type = 'button'; header.className = 'ps-support-toggle'; header.textContent = options.admin ? 'Client support chat' : 'Chat with PrimeSphere';
     var body = document.createElement('div'); body.className = 'ps-support-body'; body.hidden = !options.admin;
+    var launcher = null;
+    if (!options.admin) {
+      launcher = document.createElement('button'); launcher.type = 'button'; launcher.className = 'ps-support-launcher';
+      launcher.setAttribute('aria-label','Open live chat'); launcher.setAttribute('aria-expanded','false');
+      launcher.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 8.7 3.9a8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5z"/><path d="M8 11h.01M12 11h.01M16 11h.01"/></svg>';
+      panel.classList.add('ps-support-collapsed');
+      launcher.addEventListener('click',function(){body.hidden=!body.hidden;syncLauncher();});
+      panel.append(launcher);
+    }
+    function syncLauncher() {
+      if (!launcher) return;
+      panel.classList.toggle('ps-support-collapsed', body.hidden);
+      launcher.setAttribute('aria-expanded',String(!body.hidden));
+      launcher.setAttribute('aria-label',body.hidden?'Open live chat':'Close live chat');
+    }
     var members = [];
     var threadOpen = !!options.admin;
     var selectedTopic = options.topic || 'general';
@@ -31,6 +46,7 @@
       var heading=document.createElement('strong'); heading.textContent=title; header.append(heading);
       if (!options.admin && threadOpen) { var status=document.createElement('small');status.className='ps-support-presence';status.dataset.online=String(!!active);status.textContent=member ? (active ? 'Online' : 'Offline') : (active ? 'Active conversation' : 'Inactive conversation');header.append(status); }
       header.setAttribute('aria-expanded',String(!body.hidden));
+      syncLauncher();
     }
     function drawMembers() {
       team.replaceChildren();
@@ -150,7 +166,7 @@
         var incoming = data.messages.filter(function (m) { return m.topic && m.topic !== 'general' && m.sender === (options.admin ? 'client' : 'admin') && !m.seen; });
         if (incoming.length && !options.admin) body.hidden = false;
         updateHeader();
-        header.setAttribute('aria-expanded', String(!body.hidden));
+        header.setAttribute('aria-expanded', String(!body.hidden)); syncLauncher();
         var signature = selectedTopic + JSON.stringify(visible);
         if (signature !== lastSignature) {
           lastSignature = signature; log.replaceChildren();
