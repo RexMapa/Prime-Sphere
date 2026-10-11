@@ -1021,3 +1021,39 @@
     });
   });
 })();
+
+/* Keep the Work stores anchor aligned while async portfolio content loads. */
+(function () {
+  var target = document.querySelector('[data-work-page] #stores');
+  if (!target) return;
+  var observer, timer, frame;
+  function stop() {
+    if (observer) observer.disconnect();
+    clearTimeout(timer); cancelAnimationFrame(frame);
+    window.removeEventListener('wheel', stop);
+    window.removeEventListener('touchstart', stop);
+    window.removeEventListener('keydown', stop);
+    window.removeEventListener('ps:splash-done', align);
+    window.removeEventListener('load', align);
+  }
+  function align() {
+    if (location.hash !== '#stores') return;
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(function () {
+      target.scrollIntoView({ block: 'start', behavior: 'instant' });
+    });
+  }
+  function start() {
+    stop();
+    if (location.hash !== '#stores') return;
+    window.addEventListener('wheel', stop, { passive: true });
+    window.addEventListener('touchstart', stop, { passive: true });
+    window.addEventListener('keydown', stop);
+    window.addEventListener('ps:splash-done', align);
+    window.addEventListener('load', align);
+    if (window.ResizeObserver) { observer = new ResizeObserver(align); observer.observe(document.querySelector('[data-work-page]')); }
+    align(); timer = setTimeout(stop, 6500);
+  }
+  window.addEventListener('hashchange', start);
+  start();
+})();

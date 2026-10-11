@@ -1353,3 +1353,4 @@ button.round-link { cursor: pointer; font: inherit; padding: 0; }
 .home-booking .contact-panel { padding:28px; }
 .home-booking { min-width:0; }
 @media(max-width:600px){.home-booking .contact-panel{padding:18px;}}
+[data-work-page] #stores { scroll-margin-top: 105px; }
