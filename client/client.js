@@ -182,6 +182,7 @@
     show(me);
   }
   function show(me) {
+    if (window.psClientSupport) { window.psClientSupport.stop(); window.psClientSupport.remove(); window.psClientSupport = null; }
     state.shownStatus = me.status;
     stopPoll();
     var s = me.status === 'invited' ? 'onboarding' : me.status;
@@ -805,6 +806,10 @@
       ]),
       accessRequests()
     ]);
+    if (window.PSSupportChat) {
+      window.psClientSupport = window.PSSupportChat({ url: '/api/auth?scope=client&action=support-chat' });
+      document.body.appendChild(window.psClientSupport); window.psClientSupport.start();
+    }
   }
 
 

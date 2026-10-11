@@ -1,0 +1,17 @@
+
+.ps-support { border: 1px solid rgba(127,216,255,.25); border-radius: 14px; background: #0e192d; overflow: hidden; color: #e7eef8; }
+.ps-support-client { position: fixed; bottom: 20px; right: 20px; width: min(380px,calc(100vw - 32px)); z-index: 100; box-shadow: 0 15px 50px #0008; }
+.ps-support-admin { margin: 24px; }
+.ps-support-toggle { width: 100%; text-align: left; padding: 16px; border: 0; background: #132944; color: #c7eeff; font: inherit; font-weight: 700; cursor: pointer; }
+.ps-support-body[hidden] { display: none; }
+.ps-support-log { max-height: 320px; overflow-y: auto; padding: 16px; display: grid; gap: 12px; font-size: 13px; }
+.ps-support-message { padding: 12px; border-radius: 10px; background: #ffffff08; overflow-wrap: anywhere; }
+.ps-support-message-admin { background: #1fbef815; }
+.ps-support-message-system { color: #ffd490; }
+.ps-support-message p { margin: 6px 0; white-space: pre-wrap; }
+.ps-support-message small { color: #91a4c2; font-size: 10px; }
+.ps-support-form { display: flex; gap: 8px; padding: 12px; }
+.ps-support-form textarea { min-width: 0; flex: 1; border: 1px solid #ffffff26; border-radius: 8px; background: #ffffff08; color: #fff; padding: 10px; font: inherit; resize: vertical; }
+.ps-support-form button { padding: 10px 14px; border: 0; border-radius: 8px; background: #1fbef8; color: #041321; cursor: pointer; font-weight: 700; }
+.ps-support-error { margin: 0 12px 12px; font-size: 12px; color: #ffb8b0; }
+.ps-support button:focus-visible, .ps-support textarea:focus-visible { outline: 2px solid #7fd8ff; outline-offset: -2px; }

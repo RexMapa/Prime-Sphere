@@ -46,9 +46,10 @@
     (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () { toast(done || 'Copied.'); })
       .catch(function () { toast('Copy failed. Select the text and copy it yourself.', true); });
   }
+  function needsHelp(c) { return c.chatUnread > 0 || Object.keys((c.onboarding || {}).accessRequests || {}).some(function (id) { return c.onboarding.accessRequests[id].status === 'help'; }); }
   function matches(c) {
     var f = S.filter;
-    var okF = f === 'all' ? true : f === 'action' ? (c.status === 'review' || c.status === 'payment_review')
+    var okF = f === 'all' ? true : f === 'action' ? (c.status === 'review' || c.status === 'payment_review' || needsHelp(c))
       : f === 'active' ? c.status === 'active' : (c.status !== 'active' && c.status !== 'review' && c.status !== 'payment_review');
     if (!okF) return false;
     if (!S.q) return true;
@@ -111,12 +112,12 @@
     } else {
       list.replaceChildren.apply(list, items.map(function (cl) {
         var biz = cl.company || (cl.onboarding && cl.onboarding.businessName) || '';
-        var needs = cl.status === 'review' || cl.status === 'payment_review';
+        var needs = cl.status === 'review' || cl.status === 'payment_review' || needsHelp(cl);
         return el('button', { type: 'button', class: 'msg-item cl-item', 'data-status': needs ? 'new' : 'read', 'aria-current': String(S.selected === cl.id), onclick: function () { select(cl.id); } }, [
           el('span', { class: 'dot' + (needs ? '' : ' dot--off') }),
           el('span', { class: 'msg-name', text: cl.name + (biz ? ', ' + biz : '') }),
           el('span', { class: 'msg-date', text: fmtDate(cl.updatedAt) }),
-          el('span', { class: 'msg-sub cl-sub' }, [pill(cl.status), cl.active ? null : el('span', { class: 'cl-pill', 'data-tone': 'danger', text: 'Disabled' }), el('span', { text: cl.email })])
+          el('span', { class: 'msg-sub cl-sub' }, [pill(cl.status), needsHelp(cl) ? el('span', { class: 'cl-pill', 'data-tone': 'warn', text: cl.chatUnread ? cl.chatUnread + ' unread messages' : 'Help requested' }) : null, cl.active ? null : el('span', { class: 'cl-pill', 'data-tone': 'danger', text: 'Disabled' }), el('span', { text: cl.email })])
         ]);
       }));
     }
@@ -142,6 +143,7 @@
     // Keep whatever the admin is typing in an action form while the list refreshes.
     var active = document.activeElement && box.contains(document.activeElement) && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
     if (active && box.dataset.cid === String(c.id) && box.dataset.status === c.status) return;
+    if (window.psAdminSupport) { window.psAdminSupport.stop(); window.psAdminSupport = null; }
     box.dataset.cid = String(c.id); box.dataset.status = c.status;
 
     var o = c.onboarding || {};
@@ -164,6 +166,7 @@
       ]),
       timeline(c),
       actionPanel(c),
+      supportPanel(c),
       accessPanel(c),
       answers(c)
     );
@@ -351,6 +354,13 @@
     });
   }
 
+  function supportPanel(c) {
+    if (!window.PSSupportChat) return el('p', { text: 'Reload this page to load support chat.' });
+    var panel = window.PSSupportChat({ admin: true, url: ENDPOINT + '&action=support-chat&id=' + c.id });
+    window.psAdminSupport = panel;
+    setTimeout(function () { panel.start(); }, 0);
+    return panel;
+  }
   function accessPanel(c) {
     var requests = (c.onboarding || {}).accessRequests || {};
     var configs = window.PS_ACCESS_REQUESTS || [];
