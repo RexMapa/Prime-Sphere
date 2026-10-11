@@ -164,6 +164,7 @@
       ]),
       timeline(c),
       actionPanel(c),
+      accessPanel(c),
       answers(c)
     );
   }
@@ -350,25 +351,37 @@
     });
   }
 
+  function accessPanel(c) {
+    var requests = (c.onboarding || {}).accessRequests || {};
+    var configs = window.PS_ACCESS_REQUESTS || [];
+    var completed = configs.filter(function (item) { return requests[item.id] && requests[item.id].status === 'completed'; }).length;
+    var helpCount = Object.keys(requests).filter(function (id) { return requests[id].status === 'help'; }).length;
+    return el('section', { class: 'cl-access-panel' }, [
+      el('h3', { text: 'Access Requests' }),
+      el('p', { class: 'muted', text: completed + ' of ' + configs.length + ' completed' + (helpCount ? ' · ' + helpCount + ' help requested' : '') }),
+      el('div', { class: 'cl-access-list' }, configs.map(function (config) {
+        var request = requests[config.id];
+        var status = request ? request.status : 'pending';
+        return el('details', { class: 'cl-access-request', open: status === 'help' }, [
+          el('summary', {}, [
+            el('strong', { text: config.title }),
+            el('span', { class: 'cl-pill', 'data-tone': status === 'help' ? 'warn' : status === 'completed' ? 'ok' : 'muted', text: status === 'help' ? 'Help requested' : status === 'completed' ? 'Completed' : 'Not submitted' })
+          ]),
+          status === 'help' ? el('p', { class: 'cl-access-help', text: 'This client asked for help with this account. Contact them to guide the next steps.' }) : null,
+          request ? el('dl', { class: 'detail-grid' }, config.fields.map(function (field) {
+            return el('div', { class: 'detail-cell' }, [el('dt', { text: field.label }), el('dd', { text: request.values[field.key] || 'Not provided' })]);
+          })) : el('p', { class: 'muted', text: 'The client has not saved this request yet.' })
+        ]);
+      }))
+    ]);
+  }
+
   function answers(c) {
     var o = c.onboarding || {};
     if (!Object.keys(o).length) return el('p', { class: 'muted cl-no-answers', text: 'No onboarding answers yet.' });
     return el('div', { class: 'cl-answers' }, [
       el('h3', { text: c.status === 'onboarding' || c.status === 'invited' ? 'Onboarding answers so far' : 'Onboarding answers' })
-    ].concat(Object.keys(o.accessRequests || {}).length ? [el('section', {}, [
-      el('h4', { text: 'Access Request' }),
-      el('div', {}, Object.keys(o.accessRequests).map(function (id) {
-        var request = o.accessRequests[id];
-        var config = (window.PS_ACCESS_REQUESTS || []).find(function (c) { return c.id === id; });
-        return el('section', {}, [
-          el('h4', { text: (config ? config.title : id) + ' — ' + request.status }),
-          el('dl', { class: 'detail-grid' }, Object.keys(request.values || {}).map(function (key) {
-            var field = config && config.fields.find(function (f) { return f.key === key; });
-            return el('div', { class: 'detail-cell' }, [el('dt', { text: field ? field.label : key }), el('dd', { text: request.values[key] || 'Not provided' })]);
-          }))
-        ]);
-      }))
-    ])] : []).concat(FIELDS.map(function (s) {
+    ].concat(FIELDS.map(function (s) {
       return el('section', {}, [
         el('h4', { text: s.title }),
         el('dl', { class: 'detail-grid', style: 'margin:0' }, s.fields.filter(function (f) { return f.type !== 'agree'; }).map(function (f) {
