@@ -1,3 +1,4 @@
+import { ensureClientSchema } from '../../lib/clients.js';
 // Admin side of live chat. One admin handles a chat at a time.
 // GET    ?status=open|mine|unassigned|closed|all  -> { sessions, unread, open, mine, unassigned, me }
 // GET    ?id=<sessionId>&after=<msgId>            -> { session, messages }
@@ -31,6 +32,7 @@ function takenError(s) {
 export default route(['GET', 'POST', 'PATCH', 'DELETE'], async (req, res) => {
   const me = await requireAdmin(req);
   await ensureSchema();
+  await ensureClientSchema();
   const { query } = db();
   const params = new URL(req.url, 'http://x').searchParams;
   const note = (id, body) => query(`INSERT INTO chat_messages (session_id, sender, body) VALUES ($1, 'note', $2)`, [id, body]);
@@ -47,6 +49,7 @@ export default route(['GET', 'POST', 'PATCH', 'DELETE'], async (req, res) => {
       // Only the admin handling the chat (or anyone, if nobody has it yet) clears its unread count.
       const reader = !s.assigned_admin_id || s.assigned_admin_id === me.id;
       if (reader && s.admin_unread) { await query(`UPDATE chat_sessions SET admin_unread = 0 WHERE id = $1`, [id]); s.admin_unread = 0; }
+      if (s.client_id && reader) await query("UPDATE client_messages SET seen = true WHERE client_id = $1 AND request_id = $2 AND sender = 'client' AND id <= (SELECT COALESCE(max(id), 0) FROM client_messages WHERE client_id = $1 AND request_id = $2)", [s.client_id, s.support_topic]);
       return send(res, 200, { session: toSession(s, me), messages: msgs.map(toMessage) });
     }
     const status = params.get('status') || 'open';
@@ -117,6 +120,9 @@ export default route(['GET', 'POST', 'PATCH', 'DELETE'], async (req, res) => {
       `INSERT INTO chat_messages (session_id, sender, body, admin_id, admin_name) VALUES ($1, 'admin', $2, $3, $4) RETURNING *`,
       [id, message, me.id, me.name]);
     await query(`UPDATE chat_sessions SET last_message_at = now() WHERE id = $1`, [id]);
+    if (s.client_id) {
+      await query("INSERT INTO client_messages (client_id, sender, sender_name, body, request_id) VALUES ($1, 'admin', $2, $3, $4)", [s.client_id, me.name, message, s.support_topic]);
+    }
     return send(res, 201, { message: toMessage(out[0]) });
   }
 

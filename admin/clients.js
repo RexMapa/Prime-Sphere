@@ -154,11 +154,15 @@
     }
     // Keep whatever the admin is typing in an action form while the list refreshes.
     var active = document.activeElement && box.contains(document.activeElement) && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
-    if (active && box.dataset.cid === String(c.id) && box.dataset.status === c.status) return;
+    if (active && box.dataset.cid === String(c.id) && box.dataset.status === c.status && box.dataset.topic === (S.requestTopic || '')) return;
     if (window.psAdminSupport) { window.psAdminSupport.stop(); window.psAdminSupport = null; }
-    box.dataset.cid = String(c.id); box.dataset.status = c.status;
+    box.dataset.cid = String(c.id); box.dataset.status = c.status; box.dataset.topic = S.requestTopic || '';
 
     var o = c.onboarding || {};
+    if (S.filter === 'action' && S.requestTopic) {
+      box.replaceChildren(supportPanel(c), accessPanel(c));
+      return;
+    }
     box.replaceChildren(
       el('div', { class: 'detail-head' }, [
         el('button', { type: 'button', class: 'ghost-btn back-btn', onclick: function () { S.selected = null; renderList(); } }, [el('span', { html: ICON.back }), 'All clients']),
@@ -368,7 +372,7 @@
 
   function supportPanel(c) {
     if (!window.PSSupportChat) return el('p', { text: 'Reload this page to load support chat.' });
-    var panel = window.PSSupportChat({ admin: true, url: ENDPOINT + '&action=support-chat&id=' + c.id, topic: S.requestTopic || 'general', requests: Object.keys((c.onboarding || {}).accessRequests || {}).filter(function (id) { return c.onboarding.accessRequests[id].status === 'help'; }) });
+    var panel = window.PSSupportChat({ admin: true, url: ENDPOINT + '&action=support-chat&id=' + c.id, singleTopic: S.filter === 'action' && !!S.requestTopic, topic: S.requestTopic || 'general', requests: Object.keys((c.onboarding || {}).accessRequests || {}).filter(function (id) { return c.onboarding.accessRequests[id].status === 'help'; }) });
     window.psAdminSupport = panel;
     setTimeout(function () { panel.start(); }, 0);
     return panel;
@@ -381,7 +385,7 @@
     return el('section', { class: 'cl-access-panel' }, [
       el('h3', { text: 'Access Requests' }),
       el('p', { class: 'muted', text: completed + ' of ' + configs.length + ' completed' + (helpCount ? ' · ' + helpCount + ' help requested' : '') }),
-      el('div', { class: 'cl-access-list' }, configs.filter(function (config) { return requests[config.id] && requests[config.id].status === 'help'; }).map(function (config) {
+      el('div', { class: 'cl-access-list' }, configs.filter(function (config) { return requests[config.id] && requests[config.id].status === 'help' && (!S.requestTopic || config.id === S.requestTopic); }).map(function (config) {
         var request = requests[config.id];
         var status = request ? request.status : 'pending';
         return el('details', { class: 'cl-access-request', open: status === 'help' }, [

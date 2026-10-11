@@ -4,10 +4,25 @@
     var panel = document.createElement('section'); panel.className = 'ps-support ' + (options.admin ? 'ps-support-admin' : 'ps-support-client');
     var header = document.createElement('button'); header.type = 'button'; header.className = 'ps-support-toggle'; header.textContent = options.admin ? 'Client support chat' : 'Chat with PrimeSphere';
     var body = document.createElement('div'); body.className = 'ps-support-body'; body.hidden = !options.admin;
+    var members = [];
+    var threadOpen = !!options.admin;
     var selectedTopic = options.topic || 'general';
     var cachedMessages = [];
     var tabs = document.createElement('div'); tabs.className = 'ps-support-tabs'; tabs.setAttribute('role','tablist'); tabs.setAttribute('aria-label','Request conversations');
-    body.append(tabs);
+    var team = document.createElement('div'); team.className = 'ps-support-team';
+    var back = document.createElement('button'); back.type = 'button'; back.className = 'ps-support-back'; back.textContent = '‹ All chats'; back.hidden = true;
+    back.addEventListener('click', function () { threadOpen = false; refreshView(); });
+    body.append(team, back, tabs);
+    if (!options.admin) fetch('/api/auth?scope=client&action=support-team', { credentials:'same-origin' }).then(function(r){return r.json();}).then(function(data){
+      members = data.members || []; team.replaceChildren();
+      members.forEach(function(member){
+        var memberButton = document.createElement('button'); memberButton.type = 'button';
+        var avatar = document.createElement('span'); avatar.className = 'ps-support-avatar'; avatar.textContent = member.name.trim().split(/\s+/).map(function(part){return part[0];}).slice(0,2).join('').toUpperCase();
+        var label = document.createElement('span'); label.textContent = member.name;
+        memberButton.append(avatar,label); memberButton.addEventListener('click',function(){selectedTopic='member-'+member.id; threadOpen=true; lastSignature=''; refreshView(); clearTimeout(timer); poll();}); team.append(memberButton);
+      });
+    }).catch(function(){});
+
     var log = document.createElement('div'); log.className = 'ps-support-log'; log.setAttribute('role', 'log'); log.setAttribute('aria-live', 'polite');
     var form = document.createElement('form'); form.className = 'ps-support-form';
     var input = document.createElement('textarea'); input.rows = 2; input.maxLength = 2000; input.required = true; input.placeholder = 'Write a message…'; input.setAttribute('aria-label','Support message');
@@ -36,6 +51,13 @@
     });
     body.append(hint, picker);
     form.append(attach, input, button); body.append(log, form, error); panel.append(header, body);
+    function refreshView() {
+      if (options.admin) return;
+      panel.classList.toggle('ps-support-inbox', !threadOpen);
+      team.hidden = threadOpen; tabs.hidden = threadOpen; back.hidden = !threadOpen;
+      log.hidden = !threadOpen; form.hidden = !threadOpen; hint.hidden = !threadOpen;
+    }
+    refreshView();
     var lastSignature = '', timer, stopped = false;
     function request(method, data) {
       return fetch(options.url + (method === 'GET' ? '' : '&topic=' + encodeURIComponent(selectedTopic)), { method: method, credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch', 'Content-Type': 'application/json' }, body: data ? JSON.stringify(data) : undefined })
@@ -50,14 +72,22 @@
         (options.requests || []).forEach(function (id) { if (topics.indexOf(id) < 0) topics.push(id); });
         data.messages.forEach(function (m) { if (topics.indexOf(m.topic || 'general') < 0) topics.push(m.topic || 'general'); });
         if (topics.indexOf(selectedTopic) < 0) topics.push(selectedTopic);
+        if (options.singleTopic) topics = [selectedTopic];
         tabs.replaceChildren();
         topics.forEach(function (id) {
           var config = (window.PS_ACCESS_REQUESTS || []).find(function (c) { return c.id === id; });
           var tab = document.createElement('button'); tab.type = 'button'; tab.setAttribute('role','tab');
           tab.setAttribute('aria-selected', String(selectedTopic === id));
           var unread = data.messages.filter(function (m) { return (m.topic || 'general') === id && m.sender === (options.admin ? 'client' : 'admin') && !m.seen; }).length;
-          tab.textContent = (config ? config.title : 'General') + (unread ? ' (' + unread + ')' : '');
-          tab.addEventListener('click', function () { selectedTopic = id; lastSignature = ''; clearTimeout(timer); poll(); });
+          var member = members.find(function(m){return id === 'member-'+m.id;});
+          var title = config ? config.title : member ? member.name : id.indexOf('member-')===0 ? 'Team conversation' : 'General';
+          tab.textContent = title + (unread ? ' (' + unread + ')' : '');
+          if (!options.admin) {
+            var preview = data.messages.filter(function(m){return (m.topic || 'general')===id;}).slice(-1)[0];
+            var subtitle = document.createElement('small'); subtitle.textContent = preview ? (preview.body || (preview.attachment ? preview.attachment.name : 'Attachment')) : 'Start a conversation';
+            tab.append(subtitle);
+          }
+          tab.addEventListener('click', function () { selectedTopic = id; threadOpen = true; refreshView(); lastSignature = ''; clearTimeout(timer); poll(); });
           tabs.append(tab);
         });
         var visible = data.messages.filter(function (m) { return (m.topic || 'general') === selectedTopic; });
@@ -87,7 +117,7 @@
             row.append(time); log.append(row);
           }); log.scrollTop = log.scrollHeight;
         }
-        if (!body.hidden && visible.some(function (m) { return m.sender === (options.admin ? 'client' : 'admin') && !m.seen; })) return request('POST', { action: 'read', through: visible[visible.length - 1].id });
+        if (!body.hidden && (options.admin || threadOpen) && visible.some(function (m) { return m.sender === (options.admin ? 'client' : 'admin') && !m.seen; })) return request('POST', { action: 'read', through: visible[visible.length - 1].id });
       }).catch(function (err) { error.textContent = err.message; }).finally(function () { if (!stopped) timer = setTimeout(poll, 5000); });
     }
     header.addEventListener('click', function () { body.hidden = !body.hidden; header.setAttribute('aria-expanded', String(!body.hidden)); });

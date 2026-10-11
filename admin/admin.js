@@ -1394,6 +1394,7 @@
         el('div', { class: 't-bubble' }, [
           el('span', { class: 'sr-only', text: who + ': ' }),
           el('span', { text: m.body }),
+          m.attachment ? el('a', { href: m.attachment.url, target: '_blank', rel: 'noopener', text: m.attachment.name, style: 'display:block;color:#7fd8ff;margin:8px 0' }) : null,
           el('time', { text: (m.sender === 'admin' && !mineMsg ? who + ' · ' : '') + fmtDate(m.createdAt), datetime: m.createdAt })
         ])
       ]);

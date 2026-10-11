@@ -32,3 +32,12 @@
 .ps-support-client .ps-support-form { flex-shrink: 0; border-top: 1px solid #ffffff18; }
 .ps-support-client .ps-support-file-hint { order: 2; }
 .ps-support-client .ps-support-error { flex-shrink: 0; }
+
+.ps-support-team { display: flex; gap: 14px; overflow-x: auto; padding: 16px 12px; border-bottom: 1px solid #ffffff18; }
+.ps-support-team button { display: grid; justify-items: center; gap: 7px; min-width: 68px; max-width: 88px; background: none; border: 0; color: #c7eeff; font: inherit; font-size: 11px; cursor: pointer; }
+.ps-support-avatar { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; border: 2px solid #1fbef8; background: #183850; color: #d6efff; font-size: 16px; font-weight: 700; }
+.ps-support-client.ps-support-inbox .ps-support-tabs { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; }
+.ps-support-client.ps-support-inbox .ps-support-tabs button { text-align: left; padding: 15px 12px; border: 0; border-bottom: 1px solid #ffffff10; border-radius: 0; font-size: 13px; }
+.ps-support-tabs small { display: block; color: #91a4c2; overflow: hidden; text-overflow: ellipsis; max-width: 280px; margin-top: 6px; font-size: 11px; }
+.ps-support-back { background: none; border: 0; text-align: left; padding: 12px 16px; color: #7fd8ff; cursor: pointer; font: inherit; }
+.ps-support-team[hidden], .ps-support-tabs[hidden], .ps-support-log[hidden], .ps-support-form[hidden], .ps-support-file-hint[hidden], .ps-support-back[hidden] { display: none !important; }
