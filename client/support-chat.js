@@ -8,6 +8,9 @@
     var threadOpen = !!options.admin;
     var selectedTopic = options.topic || 'general';
     var cachedMessages = [];
+    var loadVersion = 0;
+    var drafts = {};
+    var sending = false;
     var tabs = document.createElement('div'); tabs.className = 'ps-support-tabs'; tabs.setAttribute('role','tablist'); tabs.setAttribute('aria-label','Request conversations');
     var team = document.createElement('div'); team.className = 'ps-support-team';
     var back = document.createElement('button'); back.type = 'button'; back.className = 'ps-support-back'; back.textContent = '‹ All chats'; back.hidden = true;
@@ -39,7 +42,7 @@
         var memberButton=document.createElement('button');memberButton.type='button';
         var avatar=document.createElement('span');avatar.className='ps-support-avatar';avatar.dataset.online=String(!!member.online);avatar.textContent=member.name.trim().split(/\s+/).map(function(part){return part[0];}).slice(0,2).join('').toUpperCase();
         var label=document.createElement('span');label.textContent=member.name;
-        memberButton.append(avatar,label);memberButton.onclick=function(){selectedTopic='member-'+member.id;threadOpen=true;lastSignature='';refreshView();clearTimeout(timer);poll();};track.append(memberButton);
+        memberButton.append(avatar,label);memberButton.onclick=function(){openTopic('member-'+member.id);};track.append(memberButton);
       });
       team.append(track);
       var next=document.createElement('button');next.type='button';next.className='ps-support-page';next.textContent='›';next.setAttribute('aria-label','Next team members');next.disabled=(memberPage+1)*3>=members.length;
@@ -65,18 +68,19 @@
     picker.addEventListener('change', async function () {
       var files = Array.from(picker.files || []); if (!files.length) return;
       if (files.length > 10 || files.some(function (file) { return !file.size || file.size > 4 * 1024 * 1024; })) { error.textContent = 'Choose up to 10 files, each non-empty and no larger than 4 MB.'; picker.value = ''; return; }
-      attach.disabled = true; button.disabled = true; input.disabled = true;
+      var uploadTopic = selectedTopic;
+      sending = true; attach.disabled = true; button.disabled = true; input.disabled = true;
       var types = { jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',gif:'image/gif',mp4:'video/mp4',webm:'video/webm',mov:'video/quicktime',mp3:'audio/mpeg',m4a:'audio/mp4',wav:'audio/wav',ogg:'audio/ogg',pdf:'application/pdf',txt:'text/plain',csv:'text/csv',doc:'application/msword',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',xls:'application/vnd.ms-excel',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',ppt:'application/vnd.ms-powerpoint',pptx:'application/vnd.openxmlformats-officedocument.presentationml.presentation' };
       try {
         for (var i = 0; i < files.length; i++) {
           var file = files[i]; error.textContent = 'Sending file ' + (i + 1) + ' of ' + files.length + '…';
           var type = file.type || types[file.name.split('.').pop().toLowerCase()] || 'application/octet-stream';
-          var response = await fetch(options.url + '&topic=' + encodeURIComponent(selectedTopic) + '&upload=1&filename=' + encodeURIComponent(file.name), { method:'POST', credentials:'same-origin', headers:{'X-Requested-With':'fetch','Content-Type':type}, body:file });
+          var response = await fetch(options.url + '&topic=' + encodeURIComponent(uploadTopic) + '&upload=1&filename=' + encodeURIComponent(file.name), { method:'POST', credentials:'same-origin', headers:{'X-Requested-With':'fetch','Content-Type':type}, body:file });
           var data = await response.json(); if (!response.ok) throw new Error(data.error || 'File upload failed.');
         }
         error.textContent = ''; clearTimeout(timer); poll();
       } catch (err) { error.textContent = err.message; }
-      finally { attach.disabled = false; button.disabled = false; input.disabled = false; picker.value = ''; }
+      finally { sending = false; attach.disabled = false; button.disabled = false; input.disabled = false; picker.value = ''; }
     });
     body.append(hint, picker);
     form.append(attach, input, button); body.append(log, form, error); panel.append(header, body);
@@ -89,15 +93,27 @@
     }
     refreshView();
     var lastSignature = '', timer, stopped = false;
-    function request(method, data) {
-      return fetch(options.url + (method === 'GET' ? '' : '&topic=' + encodeURIComponent(selectedTopic)), { method: method, credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch', 'Content-Type': 'application/json' }, body: data ? JSON.stringify(data) : undefined })
+    function openTopic(id) {
+      drafts[selectedTopic] = input.value;
+      selectedTopic = id; loadVersion++; threadOpen = true; lastSignature = '';
+      input.value = drafts[id] || ''; error.textContent = '';
+      log.replaceChildren();
+      var loading = document.createElement('p'); loading.className = 'ps-support-loading'; loading.textContent = 'Loading conversation…'; log.append(loading);
+      log.setAttribute('aria-busy', 'true');
+      refreshView(); clearTimeout(timer); poll();
+    }
+    function request(method, data, topicOverride) {
+      return fetch(options.url + (method === 'GET' ? '' : '&topic=' + encodeURIComponent(topicOverride || selectedTopic)), { method: method, credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch', 'Content-Type': 'application/json' }, body: data ? JSON.stringify(data) : undefined })
         .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error || 'Chat unavailable.'); return d; }); });
     }
     function poll() {
       if (stopped || !panel.isConnected) return;
       if (document.hidden) { timer = setTimeout(poll, 5000); return; }
       loadTeam();
+      var version = loadVersion;
       request('GET').then(function (data) {
+        if (stopped || version !== loadVersion) return;
+        log.setAttribute('aria-busy', 'false');
         cachedMessages = data.messages;
         var topics = [];
         (data.requests || options.requests || []).forEach(function (id) { if (topics.indexOf(id) < 0) topics.push(id); });
@@ -106,7 +122,7 @@
         if (options.singleTopic) topics = [selectedTopic];
         topics = topics.filter(function(id) { return id && id !== 'general'; });
         if (options.admin && (selectedTopic === 'general' || topics.indexOf(selectedTopic) < 0)) selectedTopic = topics[0] || '';
-        button.disabled = !selectedTopic || selectedTopic === 'general';
+        button.disabled = sending || !selectedTopic || selectedTopic === 'general';
         attach.disabled = button.disabled;
         input.disabled = button.disabled;
         tabs.replaceChildren();
@@ -126,7 +142,7 @@
             var nameLabel=document.createElement('strong');nameLabel.textContent=title;copy.append(nameLabel,subtitle);tab.append(avatar,copy);
             if(unread){var count=document.createElement('span');count.className='ps-support-unread';count.textContent=unread;tab.append(count);}
           }
-          tab.addEventListener('click', function () { selectedTopic = id; threadOpen = true; refreshView(); lastSignature = ''; clearTimeout(timer); poll(); });
+          tab.addEventListener('click', function () { openTopic(id); });
           tabs.append(tab);
         });
         if (!topics.length && !options.admin) { var emptyList=document.createElement('p');emptyList.className='ps-support-empty';emptyList.textContent='No conversations yet. Choose a team member above to start.';tabs.append(emptyList); }
@@ -158,17 +174,24 @@
           }); log.scrollTop = log.scrollHeight;
         }
         if (!body.hidden && (options.admin || threadOpen) && visible.some(function (m) { return m.sender === (options.admin ? 'client' : 'admin') && !m.seen; })) return request('POST', { action: 'read', through: visible[visible.length - 1].id });
-      }).catch(function (err) { error.textContent = err.message; }).finally(function () { if (!stopped) timer = setTimeout(poll, 5000); });
+      }).catch(function (err) { if (version === loadVersion && !stopped) { error.textContent = err.message; log.setAttribute('aria-busy','false'); } }).finally(function () { if (!stopped && version === loadVersion) timer = setTimeout(poll, 5000); });
     }
     header.addEventListener('click', function () { body.hidden = !body.hidden; header.setAttribute('aria-expanded', String(!body.hidden)); });
     header.setAttribute('aria-expanded', String(!body.hidden));
     form.addEventListener('submit', function (e) {
       e.preventDefault(); if (!selectedTopic || selectedTopic === 'general' || !input.value.trim()) return;
       button.disabled = true; error.textContent = '';
-      request('POST', { message: input.value.trim() }).then(function () { input.value = ''; clearTimeout(timer); poll(); }).catch(function (err) { error.textContent = err.message; }).finally(function () { button.disabled = false; });
+      var sendTopic = selectedTopic, text = input.value.trim();
+      sending = true;
+      request('POST', { message: text }, sendTopic).then(function () {
+        drafts[sendTopic] = '';
+        if (selectedTopic === sendTopic && input.value.trim() === text) input.value = '';
+        clearTimeout(timer); poll();
+      }).catch(function (err) { if (selectedTopic === sendTopic) error.textContent = err.message; })
+        .finally(function () { sending = false; button.disabled = false; });
     });
     panel.start = function () { clearTimeout(timer); poll(); };
-    panel.stop = function () { stopped = true; clearTimeout(timer); };
+    panel.stop = function () { stopped = true; loadVersion++; clearTimeout(timer); };
     return panel;
   };
 })();

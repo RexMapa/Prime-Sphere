@@ -66,3 +66,7 @@
 .ps-support-message { animation:ps-chat-arrive .22s ease-out; }
 @keyframes ps-chat-arrive { from { opacity:0;transform:translateY(5px); } to { opacity:1;transform:translateY(0); } }
 @media(prefers-reduced-motion:reduce) { .ps-support *, .ps-support *::before,.ps-support *::after { animation:none!important;transition:none!important; } }
+
+.ps-support-loading { color:#91a4c2;font-size:12px;align-self:center;margin:24px auto; }
+.ps-support-loading::before { content:'';display:inline-block;width:12px;height:12px;margin-right:8px;border:2px solid #7fd8ff25;border-top-color:#7fd8ff;border-radius:50%;vertical-align:middle;animation:ps-chat-loading .8s linear infinite; }
+@keyframes ps-chat-loading { to { transform:rotate(360deg); } }
