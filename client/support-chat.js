@@ -13,15 +13,44 @@
     var back = document.createElement('button'); back.type = 'button'; back.className = 'ps-support-back'; back.textContent = '‹ All chats'; back.hidden = true;
     back.addEventListener('click', function () { threadOpen = false; refreshView(); });
     body.append(team, back, tabs);
-    if (!options.admin) fetch('/api/auth?scope=client&action=support-team', { credentials:'same-origin' }).then(function(r){return r.json();}).then(function(data){
-      members = data.members || []; team.replaceChildren();
-      members.forEach(function(member){
-        var memberButton = document.createElement('button'); memberButton.type = 'button';
-        var avatar = document.createElement('span'); avatar.className = 'ps-support-avatar'; avatar.textContent = member.name.trim().split(/\s+/).map(function(part){return part[0];}).slice(0,2).join('').toUpperCase();
-        var label = document.createElement('span'); label.textContent = member.name;
-        memberButton.append(avatar,label); memberButton.addEventListener('click',function(){selectedTopic='member-'+member.id; threadOpen=true; lastSignature=''; refreshView(); clearTimeout(timer); poll();}); team.append(memberButton);
+    var memberPage = 0, lastTeamRefresh = 0;
+    function titleFor(id) {
+      var member = members.find(function(m){return id === 'member-'+m.id;});
+      var config = (window.PS_ACCESS_REQUESTS || []).find(function(c){return c.id===id;});
+      return member ? member.name : config ? config.title : id.indexOf('member-')===0 ? 'Team conversation' : 'General';
+    }
+    function updateHeader() {
+      var title = options.admin ? 'Client support chat' : threadOpen ? titleFor(selectedTopic) : 'Messages';
+      var member = members.find(function(m){return selectedTopic==='member-'+m.id;});
+      var recent = cachedMessages.filter(function(m){return (m.topic||'general')===selectedTopic;}).slice(-1)[0];
+      var active = member ? !!member.online : recent && Date.now()-new Date(recent.createdAt).getTime()<300000;
+      header.replaceChildren();
+      var heading=document.createElement('strong'); heading.textContent=title; header.append(heading);
+      if (!options.admin && threadOpen) { var status=document.createElement('small');status.className='ps-support-presence';status.dataset.online=String(!!active);status.textContent=member ? (active ? 'Online' : 'Offline') : (active ? 'Active conversation' : 'Inactive conversation');header.append(status); }
+      header.setAttribute('aria-expanded',String(!body.hidden));
+    }
+    function drawMembers() {
+      team.replaceChildren();
+      var previous=document.createElement('button');previous.type='button';previous.className='ps-support-page';previous.textContent='‹';previous.setAttribute('aria-label','Previous team members');previous.disabled=memberPage===0;
+      previous.onclick=function(){memberPage=Math.max(0,memberPage-1);drawMembers();};
+      team.append(previous);
+      var track=document.createElement('div');track.className='ps-support-member-track';
+      members.slice(memberPage*3,memberPage*3+3).forEach(function(member){
+        var memberButton=document.createElement('button');memberButton.type='button';
+        var avatar=document.createElement('span');avatar.className='ps-support-avatar';avatar.dataset.online=String(!!member.online);avatar.textContent=member.name.trim().split(/\s+/).map(function(part){return part[0];}).slice(0,2).join('').toUpperCase();
+        var label=document.createElement('span');label.textContent=member.name;
+        memberButton.append(avatar,label);memberButton.onclick=function(){selectedTopic='member-'+member.id;threadOpen=true;lastSignature='';refreshView();clearTimeout(timer);poll();};track.append(memberButton);
       });
-    }).catch(function(){});
+      team.append(track);
+      var next=document.createElement('button');next.type='button';next.className='ps-support-page';next.textContent='›';next.setAttribute('aria-label','Next team members');next.disabled=(memberPage+1)*3>=members.length;
+      next.onclick=function(){memberPage++;drawMembers();};team.append(next);
+    }
+    function loadTeam() {
+      if(options.admin || Date.now()-lastTeamRefresh<30000)return;
+      lastTeamRefresh=Date.now();
+      fetch('/api/auth?scope=client&action=support-team',{credentials:'same-origin'}).then(function(r){return r.json();}).then(function(data){members=data.members||[];memberPage=Math.min(memberPage,Math.max(0,Math.ceil(members.length/3)-1));drawMembers();updateHeader();}).catch(function(){});
+    }
+    if(!options.admin){tabs.setAttribute('role','list');tabs.setAttribute('aria-label','Chats');}
 
     var log = document.createElement('div'); log.className = 'ps-support-log'; log.setAttribute('role', 'log'); log.setAttribute('aria-live', 'polite');
     var form = document.createElement('form'); form.className = 'ps-support-form';
@@ -52,6 +81,7 @@
     body.append(hint, picker);
     form.append(attach, input, button); body.append(log, form, error); panel.append(header, body);
     function refreshView() {
+      updateHeader();
       if (options.admin) return;
       panel.classList.toggle('ps-support-inbox', !threadOpen);
       team.hidden = threadOpen; tabs.hidden = threadOpen; back.hidden = !threadOpen;
@@ -66,34 +96,39 @@
     function poll() {
       if (stopped || !panel.isConnected) return;
       if (document.hidden) { timer = setTimeout(poll, 5000); return; }
+      loadTeam();
       request('GET').then(function (data) {
         cachedMessages = data.messages;
-        var topics = ['general'];
-        (options.requests || []).forEach(function (id) { if (topics.indexOf(id) < 0) topics.push(id); });
+        var topics = options.admin ? ['general'] : [];
+        (options.admin ? options.requests || [] : []).forEach(function (id) { if (topics.indexOf(id) < 0) topics.push(id); });
         data.messages.forEach(function (m) { if (topics.indexOf(m.topic || 'general') < 0) topics.push(m.topic || 'general'); });
-        if (topics.indexOf(selectedTopic) < 0) topics.push(selectedTopic);
+        if (options.admin && topics.indexOf(selectedTopic) < 0) topics.push(selectedTopic);
         if (options.singleTopic) topics = [selectedTopic];
         tabs.replaceChildren();
         topics.forEach(function (id) {
           var config = (window.PS_ACCESS_REQUESTS || []).find(function (c) { return c.id === id; });
-          var tab = document.createElement('button'); tab.type = 'button'; tab.setAttribute('role','tab');
+          var tab = document.createElement('button'); tab.type = 'button'; if(options.admin) tab.setAttribute('role','tab'); else tab.setAttribute('role','listitem');
           tab.setAttribute('aria-selected', String(selectedTopic === id));
           var unread = data.messages.filter(function (m) { return (m.topic || 'general') === id && m.sender === (options.admin ? 'client' : 'admin') && !m.seen; }).length;
           var member = members.find(function(m){return id === 'member-'+m.id;});
           var title = config ? config.title : member ? member.name : id.indexOf('member-')===0 ? 'Team conversation' : 'General';
-          tab.textContent = title + (unread ? ' (' + unread + ')' : '');
+          tab.textContent = options.admin ? title + (unread ? ' (' + unread + ')' : '') : ''; 
           if (!options.admin) {
             var preview = data.messages.filter(function(m){return (m.topic || 'general')===id;}).slice(-1)[0];
             var subtitle = document.createElement('small'); subtitle.textContent = preview ? (preview.body || (preview.attachment ? preview.attachment.name : 'Attachment')) : 'Start a conversation';
-            tab.append(subtitle);
+            var avatar=document.createElement('span');avatar.className='ps-support-list-avatar';avatar.textContent=title.trim().split(/\s+/).map(function(part){return part[0];}).slice(0,2).join('').toUpperCase();
+            var copy=document.createElement('span');copy.className='ps-support-list-copy';
+            var nameLabel=document.createElement('strong');nameLabel.textContent=title;copy.append(nameLabel,subtitle);tab.append(avatar,copy);
+            if(unread){var count=document.createElement('span');count.className='ps-support-unread';count.textContent=unread;tab.append(count);}
           }
           tab.addEventListener('click', function () { selectedTopic = id; threadOpen = true; refreshView(); lastSignature = ''; clearTimeout(timer); poll(); });
           tabs.append(tab);
         });
+        if (!topics.length && !options.admin) { var emptyList=document.createElement('p');emptyList.className='ps-support-empty';emptyList.textContent='No conversations yet. Choose a team member above to start.';tabs.append(emptyList); }
         var visible = data.messages.filter(function (m) { return (m.topic || 'general') === selectedTopic; });
         var incoming = data.messages.filter(function (m) { return m.sender === (options.admin ? 'client' : 'admin') && !m.seen; });
         if (incoming.length && !options.admin) body.hidden = false;
-        header.textContent = (options.admin ? 'Client support chat' : 'Chat with PrimeSphere') + (incoming.length ? ' (' + incoming.length + ' new)' : '');
+        updateHeader();
         header.setAttribute('aria-expanded', String(!body.hidden));
         var signature = selectedTopic + JSON.stringify(visible);
         if (signature !== lastSignature) {
