@@ -1,3 +1,4 @@
+import { expireGuestChats } from '../lib/chat-retention.js';
 // Visitor side of live chat.
 // POST ?action=start   { message, page }          -> { id, token, messages, status }
 // POST ?action=send    { message }                 (headers: X-Chat-Id, X-Chat-Token)
@@ -47,10 +48,12 @@ function cleanMessage(v) {
 export default route(['GET', 'POST'], async (req, res) => {
   await ensureSchema();
   const { query } = db();
+  await expireGuestChats(query);
   const params = new URL(req.url, 'http://x').searchParams;
 
   if (req.method === 'GET') {
     const s = await auth(req, query);
+    if (params.get('view') === 'open') await query('UPDATE chat_sessions SET last_opened_at = now() WHERE id = $1', [s.id]);
     const after = Number(params.get('after')) || 0;
     const rows = await query(`SELECT * FROM chat_messages WHERE session_id = $1 AND id > $2 AND sender <> 'note' ORDER BY id LIMIT 200`, [s.id, after]);
     return send(res, 200, { messages: rows.map(toMessage), status: s.status, rating: s.rating, email: s.email });
@@ -70,7 +73,7 @@ export default route(['GET', 'POST'], async (req, res) => {
     const [session] = await query('SELECT * FROM chat_sessions WHERE recovery_hash = $1', [hash(formatted)]);
     if (!session) throw new HttpError(400, 'This chat code is invalid or expired.');
     const token = randomBytes(24).toString('base64url');
-    await query('UPDATE chat_sessions SET token_hash = $2 WHERE id = $1', [session.id, hash(token)]);
+    await query('UPDATE chat_sessions SET token_hash = $2, last_opened_at = now() WHERE id = $1', [session.id, hash(token)]);
     const messages = await query("SELECT * FROM chat_messages WHERE session_id = $1 AND sender <> 'note' ORDER BY id DESC LIMIT 500", [session.id]);
     return send(res, 200, { id: session.id, token, code: formatted, status: session.status, rating: session.rating, email: session.email, messages: messages.reverse().map(toMessage) });
   }

@@ -1347,3 +1347,5 @@ button.round-link { cursor: pointer; font: inherit; padding: 0; }
 .chat-root .chat-email input:focus { border-color:#7fd8ff; box-shadow:0 0 0 3px rgba(127,216,255,.08); }
 .chat-root .chat-email button { background:linear-gradient(135deg,#27c2f6,#078dee); color:#041b2b; }
 .chat-root .chat-link--muted:hover { color:#7fd8ff; }
+
+.chat-root .chat-code-expiry { color:#c5ad82; font-size:11px; line-height:1.7; padding-top:8px; border-top:1px solid rgba(197,173,130,.15); }

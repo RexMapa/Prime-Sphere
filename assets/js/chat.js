@@ -184,6 +184,7 @@
     return el('div', { class: 'chat-code-card' }, [
       el('strong', { text: 'Keep your chat code' }),
       el('p', { text: 'Use this code to reopen this conversation. Keep it private.' }),
+      el('p', { class: 'chat-code-expiry', text: 'If you do not open this chat within 3 days, the conversation will be deleted and this code will no longer work. Opening it resets the 3-day period.' }),
       el('input', { class: 'chat-recovery-input', value: code, readonly: true, 'aria-label': 'Your private chat code', onclick: function (e) { e.target.select(); } }),
       el('button', { type: 'button', class: 'chat-code-copy', text: 'Copy code', onclick: function () {
         if (navigator.clipboard) navigator.clipboard.writeText(code).then(function () { message.textContent = 'Copied'; }).catch(function () { message.textContent = 'Select the code above to copy it.'; });
@@ -332,7 +333,7 @@
     clearTimeout(pollTimer);
     if (!state.id) return;
     var sid = state.id;
-    api('GET', '?after=' + lastId()).then(function (data) {
+    api('GET', '?after=' + lastId() + (state.open && !document.hidden ? '&view=open' : '')).then(function (data) {
       if (sid !== state.id) return; // a new chat was started while this was in flight
       var fresh = (data.messages || []).filter(function (m) { return !messages.some(function (x) { return x.id === m.id; }); });
       var changed = fresh.length || data.status !== status || data.rating !== rating || !!data.email !== hasEmail;

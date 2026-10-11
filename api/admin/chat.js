@@ -1,3 +1,4 @@
+import { expireGuestChats } from '../../lib/chat-retention.js';
 import { ensureClientSchema } from '../../lib/clients.js';
 // Admin side of live chat. One admin handles a chat at a time.
 // GET    ?status=open|mine|unassigned|closed|all  -> { sessions, unread, open, mine, unassigned, me }
@@ -34,6 +35,7 @@ export default route(['GET', 'POST', 'PATCH', 'DELETE'], async (req, res) => {
   await ensureSchema();
   await ensureClientSchema();
   const { query } = db();
+  await expireGuestChats(query);
   const params = new URL(req.url, 'http://x').searchParams;
   const note = (id, body) => query(`INSERT INTO chat_messages (session_id, sender, body) VALUES ($1, 'note', $2)`, [id, body]);
   const sys = (id, body) => query(`INSERT INTO chat_messages (session_id, sender, body) VALUES ($1, 'system', $2)`, [id, body]);
