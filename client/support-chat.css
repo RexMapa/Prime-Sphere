@@ -79,3 +79,19 @@
 .ps-support-client.ps-support-collapsed { border:0; box-shadow:none; background:none; }
 .ps-support-client.ps-support-collapsed .ps-support-toggle { display:none; }
 .ps-support-client .ps-support-body:not([hidden]) { height:min(520px,calc(100dvh - 190px)); }
+/* Match the public site's chat launcher glow and expanding pulse ring. */
+.ps-support-launcher, .ps-support-launcher:hover {
+  background: linear-gradient(135deg, #3CCBFF 0%, #1FA6F5 45%, #0589ED 100%);
+  color: #031325;
+  box-shadow: 0 14px 34px -10px rgba(5,137,237,.85), inset 0 1px 0 rgba(255,255,255,.45);
+}
+.ps-support-launcher::after {
+  content: ''; position: absolute; inset: -4px; border-radius: 50%;
+  border: 1px solid rgba(127,216,255,.55);
+  animation: ps-support-ring 2.8s ease-out infinite; pointer-events: none;
+}
+@keyframes ps-support-ring {
+  0% { transform: scale(.9); opacity: .9; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .ps-support-launcher::after { animation: none; opacity: .4; } }
