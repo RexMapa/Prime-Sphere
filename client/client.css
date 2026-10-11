@@ -707,3 +707,13 @@ select.c-input option { background: #0D1A33; color: #EAF2FF; }
   .ps-particle { opacity: 0.4; }
   .c-done-card circle, .c-done-card path { stroke-dashoffset: 0; }
 }
+
+.c-brand-editor, .c-brand-list { display: grid; gap: 12px; }
+.c-brand-item { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 14px; border: 1px solid rgba(255,255,255,.15); border-radius: 12px; background: rgba(255,255,255,.03); }
+.c-brand-item span { white-space: pre-wrap; overflow-wrap: anywhere; }
+.c-brand-item button { flex-shrink: 0; }
+.c-brand-add { display: flex; align-items: flex-start; gap: 8px; }
+.c-brand-add .c-input { flex: 1; min-width: 0; }
+.c-field--danger .c-label, .c-field--danger .c-help { color: #ff9b90; }
+.c-field--danger .c-brand-item { border-color: rgba(255,122,110,.55); background: rgba(255,122,110,.06); }
+@media (max-width: 600px) { .c-brand-add, .c-brand-item { flex-direction: column; } .c-brand-add .c-input { width: 100%; } }

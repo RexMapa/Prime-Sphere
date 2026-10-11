@@ -323,10 +323,53 @@
   function field(f) {
     var val = state.draft[f.key];
     var id = 'f-' + f.key;
-    var wide = f.type === 'textarea' || f.type === 'multi' || f.type === 'choice' || f.type === 'agree';
+    var wide = f.type === 'list' || f.type === 'upload' || f.type === 'textarea' || f.type === 'multi' || f.type === 'choice' || f.type === 'agree';
     var set = function (v) { state.draft[f.key] = v; wrapEl.removeAttribute('data-invalid'); var er = $('.c-err', wrapEl); if (er) er.remove(); scheduleSave(); drawSteps(); };
     var control;
-    if (f.type === 'textarea') {
+    if (f.type === 'list' || f.type === 'upload') {
+      var items = Array.isArray(val) ? val.slice() : [];
+      var list = el('div', { class: 'c-brand-list' });
+      function draw() {
+        list.replaceChildren();
+        if (!items.length) list.appendChild(el('span', { class: 'c-help', text: 'No entries added yet.' }));
+        items.forEach(function (item, i) {
+          list.appendChild(el('div', { class: 'c-brand-item' }, [
+            el('span', { text: item }),
+            el('button', { type: 'button', class: 'c-btn-ghost', text: 'Remove', 'aria-label': 'Remove entry ' + (i + 1), onclick: function () { items.splice(i, 1); set(items.slice()); draw(); } })
+          ]));
+        });
+      }
+      draw();
+      control = el('div', { id: id, class: 'c-brand-editor' }, [list]);
+      if (f.type === 'list') {
+        var inputs = f.placeholders.map(function (placeholder, i) {
+          return el(f.placeholders.length === 1 ? 'textarea' : 'input', { class: 'c-input', rows: 3, type: 'text', maxlength: '4000', required: true, placeholder: placeholder, 'aria-label': placeholder });
+        });
+        control.appendChild(el('div', { class: 'c-brand-add' }, inputs.concat([
+          el('button', { type: 'button', class: 'c-btn-ghost', text: '+ Add', onclick: function () {
+            if (items.length >= 30) { toast('Maximum 30 entries.', true); return; }
+            var invalid = inputs.find(function (input) { return !input.value.trim(); });
+            if (invalid) { invalid.focus(); invalid.reportValidity(); return; }
+            if (f.key === 'brandColours' && !/^#[0-9a-f]{6}$/i.test(inputs[1].value.trim())) { toast('Enter a six-digit hex colour, such as #4b6b58.', true); return; }
+            if (f.key === 'assetFolders') { try { var url = new URL(inputs[1].value.trim()); if (!/^https?:$/.test(url.protocol)) throw new Error(); } catch (e) { toast('Enter a valid http or https folder URL.', true); return; } }
+            items.push(inputs.map(function (input) { return input.value.trim(); }).join(' — '));
+            set(items.slice()); draw(); inputs.forEach(function (input) { input.value = ''; }); inputs[0].focus();
+          } })
+        ])));
+      } else {
+        var picker = el('input', { type: 'file', class: 'c-input', accept: '.jpg,.jpeg,.png,.webp,.pdf,.doc,.docx', 'aria-label': 'Upload brand asset', onchange: function () {
+          var file = picker.files[0]; if (!file) return;
+          if (items.length >= 30 || file.size > 4 * 1024 * 1024) { toast('Maximum 30 files, up to 4 MB each.', true); picker.value = ''; return; }
+          picker.disabled = true;
+          fetch('/api/auth?scope=client&action=brand-upload', { method: 'POST', credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch', 'Content-Type': file.type || 'application/octet-stream' }, body: file })
+            .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error || 'Upload failed.'); return d; }); })
+            .then(function (d) { items.push(file.name + ' — ' + d.url); set(items.slice()); draw(); toast('File uploaded.'); })
+            .catch(function (err) { toast(err.message, true); })
+            .finally(function () { picker.disabled = false; picker.value = ''; });
+        } });
+        control.appendChild(picker);
+      }
+    } else if (f.type === 'textarea') {
       control = el('textarea', { id: id, class: 'c-input', rows: '4', maxlength: '4000', placeholder: f.placeholder || null, oninput: function (e) { set(e.target.value); } });
       control.value = val || '';
     } else if (f.type === 'select') {
@@ -352,7 +395,7 @@
       control = el('input', { id: id, class: 'c-input', type: f.type, maxlength: '400', placeholder: f.placeholder || null, autocomplete: f.autocomplete || 'off', oninput: function (e) { set(e.target.value); } });
       control.value = val || '';
     }
-    var wrapEl = el('div', { class: 'c-field' + (wide ? ' c-field--wide' : ''), 'data-key': f.key }, [
+    var wrapEl = el('div', { class: 'c-field' + (wide ? ' c-field--wide' : '') + (f.danger ? ' c-field--danger' : ''), 'data-key': f.key }, [
       f.type === 'agree' ? null : el(f.type === 'choice' || f.type === 'multi' ? 'span' : 'label', { class: 'c-label', for: f.type === 'choice' || f.type === 'multi' ? null : id, id: id + '-l' }, [f.label, f.required ? el('em', { text: '*', 'aria-label': 'required' }) : null]),
       control,
       f.help ? el('span', { class: 'c-help', text: f.help }) : null
@@ -406,7 +449,7 @@
 
   function display(f, v) {
     if (f.type === 'agree') return v ? 'Confirmed' : '';
-    if (Array.isArray(v)) return v.join(', ');
+    if (Array.isArray(v)) return v.join('\n\n');
     return v ? String(v) : '';
   }
   function reviewList() {

@@ -47,15 +47,91 @@ window.PS_ONBOARDING = [
     ]
   },
   {
-    id: 'brand', title: 'Brand and access', lead: 'Assets and accounts we will need to get started.',
+    id: 'brand', title: 'Brand guidelines', lead: 'Your brand story, voice, creative assets and content guidelines.',
     fields: [
-      { key: 'brandAssets', label: 'Brand guidelines, logos and photos', type: 'url', placeholder: 'A Google Drive, Dropbox or Canva link' },
-      { key: 'brandVoice', label: 'How should your brand sound?', type: 'textarea', placeholder: 'e.g. warm and practical, never salesy. Words you love or avoid.' },
-      { key: 'instagram', label: 'Instagram', type: 'text', placeholder: '@yourbrand' },
-      { key: 'facebook', label: 'Facebook page', type: 'text', placeholder: 'Link or page name' },
-      { key: 'tiktok', label: 'TikTok', type: 'text', placeholder: '@yourbrand' },
-      { key: 'access', label: 'Access you can give us', type: 'multi', options: ['Shopify staff account', 'Meta Business Manager', 'Google Ads', 'Google Analytics 4', 'Klaviyo', 'Domain and DNS', 'Social media accounts'], help: 'We will send instructions for each after approval. Never share passwords here.' }
-    ]
+      {
+            "key": "brandOverview",
+            "label": "Brand overview",
+            "type": "textarea",
+            "placeholder": "Your story, mission, products and what makes your brand different."
+      },
+      {
+            "key": "brandColours",
+            "label": "Colours",
+            "type": "list",
+            "placeholders": [
+                  "Colour name — e.g. Forest Green",
+                  "Hex colour — e.g. #4b6b58"
+            ]
+      },
+      {
+            "key": "brandAssets",
+            "label": "Dropbox assets",
+            "type": "url",
+            "placeholder": "https://dropbox.com/…"
+      },
+      {
+            "key": "brandVoice",
+            "label": "Brand voice",
+            "type": "textarea",
+            "help": "Tone principles, dos and don’ts — how your brand should sound."
+      },
+      {
+            "key": "targetSegments",
+            "label": "Target audience",
+            "type": "list",
+            "placeholders": [
+                  "Segment name",
+                  "Description — pains, goals, buying triggers"
+            ]
+      },
+      {
+            "key": "positioning",
+            "label": "Positioning",
+            "type": "textarea",
+            "help": "Positioning statement and competitive differentiators."
+      },
+      {
+            "key": "approvedClaims",
+            "label": "Approved claims",
+            "type": "list",
+            "placeholders": [
+                  "Claims cleared for use in ads and copy."
+            ]
+      },
+      {
+            "key": "prohibitedClaims",
+            "label": "Prohibited claims",
+            "type": "list",
+            "danger": true,
+            "help": "These claims must never be used in ads or copy for your brand.",
+            "placeholders": [
+                  "Claim or phrase to avoid"
+            ]
+      },
+      {
+            "key": "assetFolders",
+            "label": "Asset folders",
+            "type": "list",
+            "placeholders": [
+                  "Folder label",
+                  "https://drive.google.com/…"
+            ],
+            "help": "Link Google Drive, Dropbox or other folders for videos and raw photos."
+      },
+      {
+            "key": "uploadedAssets",
+            "label": "Uploaded assets",
+            "type": "upload",
+            "help": "Images, PDFs and Word documents. Maximum 4 MB per file."
+      },
+      {
+            "key": "brandFonts",
+            "label": "Fonts",
+            "type": "textarea",
+            "placeholder": "Font families, weights and usage for headings and body text."
+      }
+]
   },
   {
     id: 'billing', title: 'Billing', lead: 'Who we invoice. Payment details come after we approve your onboarding.',
