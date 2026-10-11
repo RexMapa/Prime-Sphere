@@ -117,6 +117,16 @@
       "source": "/splash.js",
       "destination": "/assets/js/splash.js",
       "permanent": true
+    },
+    {
+      "source": "/stores",
+      "destination": "/work#stores",
+      "permanent": true
+    },
+    {
+      "source": "/stores.html",
+      "destination": "/work#stores",
+      "permanent": true
     }
   ]
 }

@@ -26,6 +26,7 @@
     });
   });
   function fromHash() {
+    if (!tabs.length) return;
     if (location.hash === '#book') selectTab($('#tab-booking'));
     else if (location.hash === '#message') selectTab($('#tab-message'));
   }
@@ -346,6 +347,8 @@
   }
   setInterval(liveCheck, 30000);
   document.addEventListener('visibilitychange', liveCheck);
+
+  if (!tabs.length && $('#booking-form')) loadAvailability();
 
   $('#done-again').addEventListener('click', function () {
     $('#booking-done').hidden = true;
