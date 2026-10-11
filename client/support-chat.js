@@ -99,11 +99,16 @@
       loadTeam();
       request('GET').then(function (data) {
         cachedMessages = data.messages;
-        var topics = options.admin ? ['general'] : [];
+        var topics = [];
         (data.requests || options.requests || []).forEach(function (id) { if (topics.indexOf(id) < 0) topics.push(id); });
         data.messages.forEach(function (m) { if (topics.indexOf(m.topic || 'general') < 0) topics.push(m.topic || 'general'); });
-        if (options.admin && topics.indexOf(selectedTopic) < 0) topics.push(selectedTopic);
+        if (options.admin && selectedTopic !== 'general' && topics.indexOf(selectedTopic) < 0) topics.push(selectedTopic);
         if (options.singleTopic) topics = [selectedTopic];
+        topics = topics.filter(function(id) { return id && id !== 'general'; });
+        if (options.admin && (selectedTopic === 'general' || topics.indexOf(selectedTopic) < 0)) selectedTopic = topics[0] || '';
+        button.disabled = !selectedTopic || selectedTopic === 'general';
+        attach.disabled = button.disabled;
+        input.disabled = button.disabled;
         tabs.replaceChildren();
         topics.forEach(function (id) {
           var config = (window.PS_ACCESS_REQUESTS || []).find(function (c) { return c.id === id; });
@@ -126,7 +131,7 @@
         });
         if (!topics.length && !options.admin) { var emptyList=document.createElement('p');emptyList.className='ps-support-empty';emptyList.textContent='No conversations yet. Choose a team member above to start.';tabs.append(emptyList); }
         var visible = data.messages.filter(function (m) { return (m.topic || 'general') === selectedTopic; });
-        var incoming = data.messages.filter(function (m) { return m.sender === (options.admin ? 'client' : 'admin') && !m.seen; });
+        var incoming = data.messages.filter(function (m) { return m.topic && m.topic !== 'general' && m.sender === (options.admin ? 'client' : 'admin') && !m.seen; });
         if (incoming.length && !options.admin) body.hidden = false;
         updateHeader();
         header.setAttribute('aria-expanded', String(!body.hidden));
@@ -158,7 +163,7 @@
     header.addEventListener('click', function () { body.hidden = !body.hidden; header.setAttribute('aria-expanded', String(!body.hidden)); });
     header.setAttribute('aria-expanded', String(!body.hidden));
     form.addEventListener('submit', function (e) {
-      e.preventDefault(); if (!input.value.trim()) return;
+      e.preventDefault(); if (!selectedTopic || selectedTopic === 'general' || !input.value.trim()) return;
       button.disabled = true; error.textContent = '';
       request('POST', { message: input.value.trim() }).then(function () { input.value = ''; clearTimeout(timer); poll(); }).catch(function (err) { error.textContent = err.message; }).finally(function () { button.disabled = false; });
     });
