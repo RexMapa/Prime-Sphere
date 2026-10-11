@@ -41,6 +41,7 @@
   var hasEmail = false;
   var pollTimer = null;
   var sending = false;
+  var entryMode = state.id ? 'chat' : 'choose';
 
   /* ---------- Build the widget ---------- */
   var launcher = el('button', { type: 'button', class: 'chat-launcher', 'aria-label': 'Open live chat', 'aria-expanded': 'false', 'aria-controls': 'chat-panel', html: ICON_CHAT });
@@ -116,6 +117,7 @@
 
   function startNewChat() {
     resetSession();
+    entryMode = 'chat';
     render();
     input.value = ''; autosize();
     input.focus();
@@ -147,8 +149,52 @@
     ]);
   }
 
+  function entryCard() {
+    var error = el('p', { class: 'chat-error', role: 'status' });
+    var code = el('input', { class: 'chat-recovery-input', type: 'text', placeholder: 'Paste your chat code', 'aria-label': 'Past chat code', autocomplete: 'off', spellcheck: 'false', required: true });
+    var recover = el('button', { type: 'submit', class: 'chat-new-btn', text: 'Open past chat' });
+    var form = el('form', { class: 'chat-recovery-form', hidden: entryMode !== 'recover' }, [code, recover, error]);
+    form.addEventListener('submit', function (e) {
+      e.preventDefault(); if (!code.value.trim()) return;
+      recover.disabled = true; error.textContent = 'Opening your chat…';
+      api('POST', '?action=recover', { code: code.value.trim() }).then(function (data) {
+        clearTimeout(pollTimer);
+        state = { id: data.id, token: data.token, open: true }; messages = data.messages || [];
+        status = data.status; rating = data.rating || ''; hasEmail = !!data.email; entryMode = 'chat';
+        save(); render(); markSeen(); schedule();
+      }).catch(function (err) { error.textContent = err.message; }).finally(function () { recover.disabled = false; });
+    });
+    return el('div', { class: 'chat-entry' }, [
+      el('h3', { text: 'How would you like to chat?' }),
+      el('p', { text: 'Pick up where you left off or start a new conversation with our team.' }),
+      el('button', { type: 'button', class: 'chat-entry-option', text: 'Enter a code to open past chats', onclick: function () { entryMode = 'recover'; render(); var field = log.querySelector('input'); if (field) field.focus(); } }),
+      form,
+      el('button', { type: 'button', class: 'chat-entry-option chat-entry-option--new', text: 'Start a new chat', onclick: startNewChat })
+    ]);
+  }
+  function codeCard() {
+    var code = state.id + '.' + state.token;
+    var message = el('span', { class: 'chat-code-status', role: 'status' });
+    return el('div', { class: 'chat-code-card' }, [
+      el('strong', { text: 'Keep your chat code' }),
+      el('p', { text: 'Use this code to reopen this conversation. Keep it private.' }),
+      el('input', { class: 'chat-recovery-input', value: code, readonly: true, 'aria-label': 'Your private chat code', onclick: function (e) { e.target.select(); } }),
+      el('button', { type: 'button', class: 'chat-code-copy', text: 'Copy code', onclick: function () {
+        if (navigator.clipboard) navigator.clipboard.writeText(code).then(function () { message.textContent = 'Copied'; }).catch(function () { message.textContent = 'Select the code above to copy it.'; });
+        else message.textContent = 'Select the code above to copy it.';
+      } }), message
+    ]);
+  }
+
   function render() {
-    var nodes = [bubble({ sender: 'admin', body: GREETING })];
+    if (!state.id && entryMode !== 'chat') {
+      log.replaceChildren(entryCard());
+      composer.hidden = true; endLink.hidden = true; menuBtn.hidden = true;
+      return;
+    }
+    var nodes = [];
+    if (state.id) nodes.push(codeCard());
+    nodes.push(bubble({ sender: 'admin', body: GREETING }));
     messages.forEach(function (m) { nodes.push(bubble(m)); });
 
     if (status === 'open' && !hasEmail && !state.emailSkipped && messages.some(function (m) { return m.sender === 'visitor'; })) {

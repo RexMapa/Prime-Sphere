@@ -1310,3 +1310,30 @@ button.round-link { cursor: pointer; font: inherit; padding: 0; }
 }
 .team--service { padding-top: 112px; }
 @media (max-width: 860px) { .team--service { padding-top: 80px; } }
+
+/* Public chat shares the client chat's dark surfaces and bubble treatment. */
+.chat-root .chat-panel { background:#0e192d; color:#e7eef8; border:1px solid rgba(127,216,255,.25); border-radius:20px; box-shadow:0 24px 70px #0009; height:min(600px,calc(100dvh - 120px)); }
+.chat-root .chat-head { background:linear-gradient(120deg,#14283e,#0d1d32); color:#e7eef8; }
+.chat-root .chat-head p { color:#91a4c2; }
+.chat-root .chat-log { background:#0e192d; }
+.chat-root .chat-bubble { background:#ffffff08; color:#d6e7f7; border-radius:14px 14px 14px 4px; }
+.chat-root .chat-row--me .chat-bubble { background:#1fbef820; color:#d6e7f7; border-radius:14px 14px 4px 14px; }
+.chat-root .chat-bubble time { color:#91a4c2; }
+.chat-root .chat-composer { background:#0e192d; border-top:1px solid #ffffff18; }
+.chat-root .chat-input { background:#ffffff08; color:#fff; border-color:#ffffff26; }
+.chat-root .chat-card, .chat-root .chat-menu, .chat-root .chat-confirm { background:#14283e; color:#d6e7f7; }
+.chat-root .chat-menu-item { color:#d6e7f7; }
+.chat-entry { padding:16px 8px; display:grid; gap:16px; animation:ps-guest-arrive .25s ease-out; }
+.chat-entry h3 { margin:0; font-size:20px; }
+.chat-entry p, .chat-code-card p { color:#91a4c2; font-size:13px; line-height:1.7; margin:0; }
+.chat-entry-option { width:100%; text-align:left; padding:18px; border:1px solid #7fd8ff30; border-radius:12px; background:#7fd8ff08; color:#d6e7f7; font:inherit; font-size:13px; cursor:pointer; transition:background .2s,transform .2s; }
+.chat-entry-option:hover { background:#7fd8ff15; transform:translateY(-1px); }
+.chat-entry-option--new { border-color:#1fbef850; color:#7fd8ff; }
+.chat-recovery-form { display:grid;gap:12px; }
+.chat-recovery-form[hidden] { display:none; }
+.chat-recovery-input { min-width:0; width:100%; box-sizing:border-box; border:1px solid #ffffff26; border-radius:8px; background:#ffffff08; color:#d6e7f7; padding:11px; font-size:12px; }
+.chat-code-card { border:1px solid #7fd8ff20; border-radius:12px; padding:14px; display:grid;gap:8px; font-size:12px; }
+.chat-code-copy { justify-self:start; background:none; border:0; color:#7fd8ff; padding:0; cursor:pointer; }
+.chat-code-status { color:#91a4c2; font-size:11px; }
+@keyframes ps-guest-arrive { from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)} }
+@media(prefers-reduced-motion:reduce){ .chat-entry,.chat-entry-option{animation:none;transition:none;} }

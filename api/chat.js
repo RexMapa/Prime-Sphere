@@ -47,6 +47,21 @@ export default route(['GET', 'POST'], async (req, res) => {
   const action = params.get('action');
   const body = await readJson(req);
 
+  if (action === 'recover') {
+    const ip = 'chat-recovery|' + ipHash(req);
+    const [{ n }] = await query("SELECT count(*)::int AS n FROM login_attempts WHERE ip_hash = $1 AND created_at > now() - interval '10 minutes'", [ip]);
+    if (n >= 10) throw new HttpError(429, 'Too many attempts. Try again in ten minutes.');
+    await query('INSERT INTO login_attempts (ip_hash) VALUES ($1)', [ip]);
+    const code = str(body.code, 200);
+    const parts = code.split('.');
+    if (parts.length !== 2 || !/^[a-f0-9-]{36}$/i.test(parts[0]) || !/^[A-Za-z0-9_-]{32}$/.test(parts[1])) throw new HttpError(400, 'This chat code is invalid or expired.');
+    let session;
+    try { session = await auth({ headers: { 'x-chat-id': parts[0], 'x-chat-token': parts[1] } }, query); }
+    catch { throw new HttpError(400, 'This chat code is invalid or expired.'); }
+    const messages = await query("SELECT * FROM chat_messages WHERE session_id = $1 AND sender <> 'note' ORDER BY id DESC LIMIT 500", [session.id]);
+    return send(res, 200, { id: session.id, token: parts[1], status: session.status, rating: session.rating, email: session.email, messages: messages.reverse().map(toMessage) });
+  }
+
   if (action === 'start') {
     const message = cleanMessage(body.message);
     const ip = ipHash(req);
